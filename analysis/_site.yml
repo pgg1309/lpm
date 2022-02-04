@@ -1,7 +1,7 @@
-name: "Low Pass Macro"
+name: Low Pass Macro
 output_dir: ../docs
 navbar:
-  title: "Low Pass Macro"
+  title: Low Pass Macro
   left:
   - text: Home
     href: index.html
@@ -9,6 +9,10 @@ navbar:
     href: about.html
   - text: License
     href: license.html
+  right:
+  - icon: fab fa-github
+    text: Source code
+    href: https://github.com/pgg1309/lpm
 output:
   workflowr::wflow_html:
     toc: yes
