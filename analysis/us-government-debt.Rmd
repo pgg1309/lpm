@@ -1,0 +1,276 @@
+---
+title: "US Government Debt"
+author: "Dr. Paulo Gustavo Grahl, CFA"
+date: "2022-02-10"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    echo = FALSE,
+    warning = FALSE,
+    message = FALSE,
+    include = TRUE
+)
+
+library(tidyverse)
+library(tsibble)
+library(lubridate)
+library(patchwork)
+```
+
+```{r}
+source("code/download_public_debt.R", local = knitr::knit_global())
+source("code/fed_soma_holdings.R", local = knitr::knit_global())
+
+# functions
+my_dollar_bn <- function(x) scales::label_dollar(accuracy = 1, scale = 1e-3)(x)
+```
+
+
+
+## Introduction
+
+The **total public debt** is at `r my_dollar_bn(tail(debt_total,1)$value)`bn (`r format(tail(debt_total,1)$index, "%b %d")`), and **debt held by the public** reached `r my_dollar_bn(tail(debt_public,1)$value)`bn (`r format(tail(debt_public,1)$index, "%b %d")`). The Federal Reserve holds `r my_dollar_bn(tail(treasury_holdings,1)$value)`bn in its balance sheet (`r format(tail(treasury_holdings,1)$index, "%b %d")`), or `r round((tail(treasury_holdings,1)$value/filter(debt_public, index == tail(treasury_holdings,1)$index)$value)*100,1)`% of the total debt held by the public.
+
+```{r fig.width=8}
+bind_rows(treasury_holdings, debt_public) %>% 
+  filter(index >= "2006-01-01") %>% 
+  ggplot(aes(x = index, y = value, color = key)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(
+    labels = scales::label_dollar(scale = 1e-3),
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis()
+  ) +
+  scale_x_date(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  labs(
+    title = "US Public Debt",
+    subtitle = "US$ billions",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        panel.border = element_blank()
+        )
+```
+
+```{r fig.width=8}
+left_join(treasury_holdings, debt_public, by = "index") %>% 
+  drop_na() %>% 
+  transmute(index, key = "Treasury Holdings / Debt Held by the Public", 
+            value = value.x / value.y) %>%
+  ggplot(aes(x = index, y = value, color = key)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 1),
+    breaks = scales::breaks_width(0.02),
+    sec.axis = dup_axis()
+  ) +
+  scale_x_date(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  labs(
+    title = "Fed Holdings of Treasury",
+    subtitle = "% of debt held by the public",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        panel.border = element_blank())
+```
+
+```{r}
+# convert to 12 month absolute change
+db12m <-
+  bind_rows(treasury_holdings, debt_public) %>% 
+  pivot_wider(names_from = key, values_from = value) %>% 
+  arrange(index) %>% 
+  drop_na() %>% 
+  pivot_longer(-index) %>% 
+  as_tsibble(index = index, key = name) %>%   
+  index_by(month = ~yearmonth(.)) %>% 
+  group_by_key() %>% 
+  summarise(value = last(value)) %>% 
+  group_by_key() %>% 
+  mutate(value = value - lag(value, 12)) %>% 
+  drop_na() %>% 
+  ungroup()
+```
+
+Another interesting fact is that total public **debt held by the public** increased `r my_dollar_bn(filter(db12m, name == "Debt Held by the Public") %>% slice_tail() %>% pull(value))`bn, while **Federal Reserve holdings** rose by `r my_dollar_bn(filter(db12m, name == "Fed Treasury Holdings") %>% slice_tail() %>% pull(value))`bn.
+
+```{r fig.width=8}
+db12m %>% 
+  filter_index("2007 Jan" ~. ) %>% 
+  ggplot(aes(x = as.Date(month), y = value, color = name)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(
+    labels = scales::label_dollar(scale = 1e-3),
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis()
+  ) +
+  scale_x_date(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  labs(
+    title = "US Public Debt",
+    subtitle = "Change in 12 months, US$ billions",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        panel.border = element_blank()
+        )
+  
+```
+
+The chart below show the amout of Treasury debt that was **absorbed by the public, excluding Fed**.
+
+```{r fig.width=8}
+db12m %>% 
+  pivot_wider(names_from = name, values_from = value) %>% 
+  mutate(`Held by the Public (ex Fed)` = 
+           `Debt Held by the Public` - `Fed Treasury Holdings`) %>% 
+  select(month, `Held by the Public (ex Fed)`) %>% 
+  pivot_longer(-month) %>% 
+  filter_index("2007 Jan" ~. ) %>% 
+  ggplot(aes(x = as.Date(month), y = value, color = name)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(
+    labels = scales::label_dollar(scale = 1e-3),
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis()
+  ) +
+  scale_x_date(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  labs(
+    title = "US Public Debt",
+    subtitle = "Change in 12 months, US$ billions",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        panel.border = element_blank()
+        )
+  
+```
+
+
+## Fed Purchases
+
+
+```{r}
+bind_rows(treasury_bills, treasury_bonds, treasury_tips) %>% 
+  mutate(key = str_remove_all(key, "Fed|Holdings")) %>% 
+  filter(index >= "2020-01-01") %>% 
+  ggplot(aes(x = index, y = value, color = key)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(
+    labels = scales::label_dollar(scale = 1e-3),
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis()
+  ) +
+  scale_x_date(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  labs(
+    title = "US Federal Reserve Holdings by type",
+    subtitle = "US$ billions",
+    x = NULL,
+    y = NULL,
+    color = "Type of Holdings"
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        panel.border = element_blank()
+        )
+
+  
+```
+
+
+```{r}
+bind_rows(treasury_bills, treasury_bonds, treasury_tips) %>% 
+  mutate(key = str_remove_all(key, "Fed|Holdings")) %>% 
+  group_by(key) %>% 
+  mutate(change = value - lag(value,4)) %>% 
+  ungroup() %>% 
+  filter(index >= "2020-01-01") %>% 
+  ggplot(aes(x = index, y = change, color = key)) + 
+  geom_line(size = 1) +
+  annotate('text', x = as.Date("2020-07-01"), y = 95000, 
+           label = stringr::str_wrap("Fed purchases reached a bit more than $1tn in 4w during the initial months of Covid", width = 45),
+           hjust = 0) + 
+  scale_y_continuous(
+    labels = scales::label_dollar(scale = 1e-3),
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis()
+  ) +
+  scale_x_date(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  labs(
+    title = "US Federal Reserve QE - 4 weeks rolling purchases",
+    subtitle = "US$ billions (only Treasury assets, excludes MBS, CMBS)",
+    x = NULL,
+    y = NULL,
+    color = "Type of Holdings"
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        panel.border = element_blank()
+        ) +
+  coord_cartesian(ylim = c(NA, 100000))
+
+```
+
+```{r}
+bind_rows(treasury_tips, treasury_holdings) %>% 
+  pivot_wider(names_from = key,  values_from = value) %>% 
+  mutate(`Tips share` = `Fed Tips Holdings` / `Fed Treasury Holdings`) %>%
+  select(index, `Tips share`) %>% 
+  pivot_longer(-index) %>% 
+  filter(index >= "2014-01-01") %>% 
+  ggplot(aes(x = index, y = value, color = name)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 0.1),
+    breaks = scales::breaks_width(0.005),
+    sec.axis = dup_axis()
+  ) +
+  scale_x_date(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  labs(
+    title = "Fed Holdings of Tips",
+    subtitle = "% total Fed holdings",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        panel.border = element_blank())
+  
+```
