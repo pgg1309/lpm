@@ -12,4 +12,4 @@ Welcome to my research website.
 
 Latest posts:
 
-* 2022-02-10: [US Government Debt](us-government-debt.Rmd)
+* 2022-02-10: [US Government Debt](us-government-debt.html)
