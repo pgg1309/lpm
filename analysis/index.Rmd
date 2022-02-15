@@ -12,4 +12,6 @@ Welcome to my research website.
 
 Latest posts:
 
-* 2022-02-10: [US Government Debt](us-government-debt.html)
+* 2022-02-15: [US Empire Manufacturing](docs/202201-us-empire-manuf.html)
+* 2022-02-10: [US Government Debt](docs/us-government-debt.html)
+* 2022-02-14: [US CPI - simulations](docs/us-inflation-simulation.html)

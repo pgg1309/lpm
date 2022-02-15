@@ -1,0 +1,194 @@
+---
+title: "US Empire State Manufacturing"
+author: "Dr. Paulo Gustavo Grahl, CFA"
+date: "2022-02-15"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    echo = FALSE,
+    warning = FALSE,
+    message = FALSE,
+    include = TRUE
+)
+require(fpp3)
+```
+
+```{r}
+# Functions
+plot_var <- function(db, id) {
+  
+  x <- filter(db, series_id %in% c(id, stringr::str_replace(id, "CDISA$", "FDISA"))) %>%
+    group_by_key() %>% 
+    mutate(chg = value - lag(value)) %>% 
+    drop_na() %>% 
+    group_by_key() %>% 
+    mutate(trend = signal::sgolayfilt(value, p = 1, n = 7))
+  
+  # preservou estrutura de grupos
+  xlast <- x %>% slice_tail()
+
+  x %>% 
+    filter_index("2010 Jan" ~ .) %>% 
+  ggplot(aes(x=month)) +
+  geom_line(aes(y = value), col = 'darkgrey', size = 1) + 
+  geom_line(aes(y = trend), size = 1, col = 'blue') +
+  geom_point(aes(y = value), data = xlast, size = 2) +  
+  scale_y_continuous(
+    breaks = scales::breaks_pretty(n = 8),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  scale_x_yearmonth(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 12)
+  ) +
+  labs(
+    x = NULL,
+    y = "diffusion index"
+  ) +
+  theme_bw() +
+    theme(panel.border = element_blank(), legend.position = "bottom") +
+  facet_wrap(vars(series_name), dir = 'v', scales = 'free_y')
+  
+}
+```
+
+
+## Main takeaways
+
+* Business activity little changed in February, up four points to 3.1 but below
+market expectations of 12.
+* New orders and shipments marginally up, but at a level that implies a material 
+slowdown in activity compared to 4Q 2021.
+* Unfilled orders, delivery time, and inventories continue to show the impact 
+of supply chain bottlenecks.
+* Prices paid remained at high level and prices received reached a new high -- not
+good for inflation.
+* Employment remains strong.Also capex and tech spending plans remain close to the highs.
+
+
+## Charts
+```{r}
+# Read data
+empireboard <- pins::board_folder("E:/RData/EMPIREMANUF")
+empire <- pins::pin_read(empireboard, 'empire-manufacturing')
+```
+
+******
+### General Business Conditions
+```{r}
+plot_var(empire, 'GACDISA')
+```
+
+******
+### Empire Manufacturing - modified
+```{r}
+empiremod <- bind_rows(
+  filter(empire, series_id %in% c('IVCDISA', 'NOCDISA', 'NECDISA', 'SHCDISA', 'DTCDISA')) %>% 
+  index_by() %>% 
+  summarize(value = mean(value)/2+50, series_name = 'Current Modified') %>% 
+  update_tsibble(key = series_name)
+,
+filter(empire, series_id %in% c('IVFDISA', 'NOFDISA', 'NEFDISA', 'SHFDISA', 'DTFDISA')) %>% 
+  index_by() %>% 
+  summarize(value = mean(value)/2+50, series_name = 'Future Modified') %>%
+  update_tsibble(key = series_name)
+) %>% 
+   group_by_key() %>% 
+    mutate(trend = signal::sgolayfilt(value, p = 1, n = 7))
+
+empiremodlast <- slice_tail(empiremod)
+
+ empiremod %>% 
+   filter_index("2010 Jan" ~ .) %>% 
+  ggplot(aes(x=month)) +
+  geom_line(aes(y = value), col = 'darkgrey', size = 1) + 
+  geom_line(aes(y = trend), size = 1, col = 'blue') +
+  geom_point(aes(y = value), data = empiremodlast, size = 2) +  
+  scale_y_continuous(
+    breaks = scales::breaks_pretty(n = 8),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  scale_x_yearmonth(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 12)
+  ) +
+  labs(
+    x = NULL,
+    y = "diffusion index"
+  ) +
+  theme_bw() +
+    theme(panel.border = element_blank(), legend.position = "bottom") +
+  facet_wrap(vars(series_name), dir = 'v', scales = 'free_y')
+
+```
+
+******
+### New Orders
+```{r}
+plot_var(empire, 'NOCDISA')
+```
+
+******
+### Shipments
+```{r}
+plot_var(empire, 'SHCDISA')
+```
+
+******
+### Unfilled Orders
+```{r}
+plot_var(empire, 'UOCDISA')
+```
+
+******
+### Delivery Time
+```{r}
+plot_var(empire, 'DTCDISA')
+```
+
+******
+### Inventories
+```{r}
+plot_var(empire, 'IVCDISA')
+```
+
+******
+### Prices Paid
+```{r}
+plot_var(empire, 'PPCDISA')
+```
+
+******
+### Prices Received
+```{r}
+plot_var(empire, 'PRCDISA')
+```
+
+******
+### Number of Employees
+```{r}
+plot_var(empire, 'NECDISA')
+```
+
+******
+### Average Employee Workweek
+```{r}
+plot_var(empire, 'AWCDISA')
+```
+
+******
+### Capital Expenditures
+```{r}
+plot_var(empire, 'CECDISA')
+```
+
+******
+### Technology Spending
+```{r}
+plot_var(empire, 'TSCDISA')
+```
+
