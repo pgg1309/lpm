@@ -1,0 +1,139 @@
+---
+title: "US financial wealth"
+author: "Dr. Paulo Gustavo Grahl, CFA"
+date: "2022-02-18"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  include = TRUE
+)
+require(fpp3)
+```
+
+```{r functions}
+# Function to read from FRED
+get_fred_data <- function(id, keyname, factor = 1) {
+  fredr::fredr(
+    series_id = id,
+    frequency = "q"
+  ) %>%
+    select(date, value) %>% 
+    mutate(date = yearquarter(date), value = value / factor, key = keyname) %>%
+    tsibble(index = date, key = "key") %>%
+    return()
+}
+
+```
+
+
+## House hold liquid assets
+
+```{r load_data}
+fredr::fredr_set_key(options()$fred.key)
+
+# household and nonprofit ------------------------------------------------------
+# NOTE: not all variables are at the same unit.
+
+deposits <- get_fred_data("CDCABSHNO", "Checkable deposits and currency")
+savings  <- get_fred_data("TSDABSHNO", "Time and savings deposits")
+moneymarket <- get_fred_data("MMFSABSHNO", "Money market fund shares")
+treasury <- get_fred_data("BOGZ1LM153061105Q", "Treasury securities", 1000)
+munis <- get_fred_data("BOGZ1LM153062005Q", "Municipal securities", 1000)
+agency <- get_fred_data("BOGZ1LM153061705Q", "Agency- and GSE-Backed Securities", 1000)
+bonds <- get_fred_data("BOGZ1LM153063005Q", "Corporate and Foreign Bonds", 1000)
+loans <- get_fred_data("HNOLA", "Loans", 1000) # include cash account at brokers
+equities <- get_fred_data("HNOCEA", "Corporate Equities")
+funds <- get_fred_data("HNOMFSA", "Mutual Fund Shares")
+
+liquidassets <- bind_rows(deposits, savings, moneymarket, treasury, munis, agency, bonds, loans, equities, funds) %>% 
+  index_by() %>% 
+  summarize(value = sum(value)) %>% 
+  mutate(key = 'Liquid Assets') %>% 
+  update_tsibble(key = key)
+
+# https://www.federalreserve.gov/datadownload/Output.aspx?rel=Z1&series=2acd282d5b6948de2dd225512929f288&lastobs=&from=03/01/1945&to=12/31/2021&filetype=csv&label=include&layout=seriescolumn
+
+```
+
+
+The cart below plots households liquid assets: checking and savings deposits, money market, Treasury, Muni and Corporate bonds, equities and mutual funds. 
+
+```{r}
+liquidassets %>% 
+  filter_index("2000 Q1" ~.) %>% 
+  ggplot(aes(x = date, y = value)) + 
+  geom_line(size = 1) +
+  geom_vline(xintercept = as_date(yearquarter("2019 Q4")), lty = 'dashed') + 
+  annotate('text',
+           x = as_date(yearquarter("2019 Q4")),
+           y = 61000,
+           label = "Covid starts  ",
+           hjust = 'right') + 
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    labels = scales::label_dollar(),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  scale_x_yearquarter(
+    breaks = scales::breaks_pretty(n = 12)
+  ) +
+  labs(
+    title = "Household liquid assets",
+    subtitle = "excludes housing",
+    x = NULL,
+    y = "billions",
+    caption = "Source: Federal Reserve Flow of Funds"
+  ) +
+  theme_bw() +
+  theme(panel.border = element_blank())
+```
+
+The table below shows how much each type of asset contributed to the total change in liquid assets since 2019.
+```{r}
+bind_rows(deposits, savings, moneymarket, treasury, munis, agency, bonds, loans, equities, funds) %>% 
+  group_by_key() %>% 
+  mutate(`change since 2019` = if_else(date == yearquarter("2019 Q4"), value, NA_real_),
+         `change since 2019` = value - zoo::na.locf(`change since 2019`, na.rm = FALSE)) %>% 
+  drop_na() %>% 
+  slice_tail() %>% 
+  ungroup() %>% 
+  arrange(desc(`change since 2019`)) %>% 
+  kableExtra::kbl(format = "html", format.args = list(big.mark = ','), digits = 0) %>% 
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+  
+```
+
+
+```{r}
+bind_rows(deposits, savings, moneymarket, treasury, munis, agency, bonds, loans, equities, funds) %>% 
+  group_by_key() %>% 
+  mutate(`change since 2019` = if_else(date == yearquarter("2019 Q4"), value, NA_real_),
+         `change since 2019` = value - zoo::na.locf(`change since 2019`, na.rm = FALSE)) %>% 
+  drop_na() %>% 
+  ggplot(aes(x = date, y = `change since 2019`, color = key)) +
+  geom_line(size = 1) +
+  geom_point() +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 15),
+    labels = scales::label_dollar(),
+    sec.axis = dup_axis(name = NULL)
+  ) + 
+  scale_x_yearquarter(
+    breaks = scales::breaks_pretty(n = 10)
+  ) + 
+  labs(
+    title = "Change in liquid assets",
+    x = NULL, 
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(panel.border = element_blank(), legend.position = 'bottom')
+```
+
