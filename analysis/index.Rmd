@@ -12,7 +12,7 @@ Welcome to my research website.
 
 Latest posts:
 
-* 2022-02-18: [US Financial Wealth](us-financial-wealth.Rmd)
+* 2022-02-18: [US Financial Wealth](us-financial-wealth.html)
 * 2022-02-15: [US Empire Manufacturing](202201-us-empire-manuf.html)
 * 2022-02-10: [US Government Debt](us-government-debt.html)
 * 2022-02-14: [US CPI - simulations](us-inflation-simulation.html)
