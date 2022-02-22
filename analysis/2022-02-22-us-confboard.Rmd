@@ -1,0 +1,190 @@
+---
+title: "US Conference Board Consumer Confidence"
+author: "pgg1309"
+date: "2022-02-22"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    echo = FALSE,
+    warning = FALSE,
+    message = FALSE,
+    include = TRUE
+)
+require(fpp3)
+require(tidyverse)
+```
+
+```{r functions}
+plot_var <- function(db, id, sdate = "2007 Jan") {
+  
+  x <- filter(db, series_id %in% id) %>%
+    group_by_key() %>% 
+    mutate(chg = value - lag(value)) %>% 
+    drop_na() %>% 
+    group_by_key() %>% 
+    mutate(trend = signal::sgolayfilt(value, p = 1, n = 7))
+  
+  # preservou estrutura de grupos
+  xlast <- x %>% slice_tail()
+
+  x %>% 
+    filter_index(sdate ~ .) %>% 
+  ggplot(aes(x=month)) +
+  geom_line(aes(y = value), col = 'darkgrey', size = 1) + 
+  geom_line(aes(y = trend), size = 1, col = 'blue') +
+  geom_point(aes(y = value), data = xlast, size = 2) +  
+  scale_y_continuous(
+    breaks = scales::breaks_pretty(n = 8),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  scale_x_yearmonth(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n = 12)
+  ) +
+  labs(
+    x = NULL,
+    y = "index"
+  ) +
+  theme_bw() +
+    theme(panel.border = element_blank(), legend.position = "bottom") +
+  facet_wrap(vars(series_name), dir = 'v', scales = 'free_y')
+  
+}
+```
+
+
+## Main takeaways
+*Obs: the cutoff date for the preliminary result was Feb 16*.
+
+- Consumer confidence slightly down in February, with diverging components: present situation slightly up and expectations slightly down.
+- Assessment of the labor market worsened marginally but overall it still shows a very strong labor market.
+
+
+```{r}
+# read data
+db <- readRDS("E:/RProjs/us-monthly-db/data/conferenceboard-data.rds")
+
+
+```
+
+## Consumer confidence
+```{r}
+plot_var(db, "USCNFCONQ")
+```
+
+## Present situation
+```{r}
+plot_var(db, "USCNPSIT")
+```
+
+## Expectations index
+```{r}
+plot_var(db, "USCNEXPT")
+```
+
+## Labor market
+```{r}
+plot_var(db, c("USTCBEPN", "USTCBEPP"))
+```
+
+```{r}
+# read unemployment rate
+myboard <- pins::board_folder("E:/RData/CPS")
+ur <- pins::pin_read(myboard, 'data.1.AllData')
+ur <-
+  filter(ur, stringr::str_trim(`series_id        `) == "LNS14000000") %>%
+  transmute(month = yearmonth(paste0(year, period)),
+            series_id = "LNS14000000",
+            value = parse_number(`       value`),
+            series_name = "US Unemployment Rate") %>% 
+  as_tsibble(index = month, key = series_id)
+
+
+labor_db <- filter(db, series_id %in% c("USTCBEPN", "USTCBEPP")) %>% 
+  select(-series_name) %>% 
+  as_tibble() %>% 
+  pivot_wider(names_from = series_id, values_from = value) %>% 
+  mutate(`Jobs hard - plentiful` = USTCBEPP - USTCBEPN) %>% 
+  left_join(select(ur, month, value), by = 'month') %>% 
+  rename(`Unemployment rate` = value) %>% 
+  as_tsibble() 
+
+labor_model <- labor_db %>% 
+  model(
+    arima = ARIMA(`Unemployment rate` ~ PDQ(0,0,0) + `Jobs hard - plentiful`)
+  )
+
+extremos <- augment(labor_model) %>%
+  drop_na() %>% 
+  filter(
+    .innov < quantile(.innov, 0.25) - 3 * IQR(.innov) |
+    .innov > quantile(.innov, 0.75) + 3 * IQR(.innov)
+  )
+
+# add dummies
+labor_db_miss <- labor_db %>% 
+  anti_join(extremos) %>% 
+  fill_gaps() 
+
+
+labor_model_miss <- labor_db_miss %>% 
+  model(
+    arima = ARIMA(`Unemployment rate` ~ PDQ(0,0,0) + `Jobs hard - plentiful`)
+  ) 
+  
+#report(labor_model_miss)
+
+#labor_model_miss %>% gg_tsresiduals()
+
+
+forecast(labor_model_miss, labor_db) %>% 
+  left_join(select(ur, month, value)) %>% 
+  ggplot(aes(x = month)) +
+  geom_line(aes(y = value, color = 'Unemployment rate'), size = 1) + 
+  geom_line(aes(y = .mean, color = 'Fitted'), size = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 15)
+  ) +
+  labs(
+    title = "US Conf. Board: Unemployment vs Job hard minus plentiful",
+    subtitle = "UR = f(Jobs Hard to Find - Jobs Plentiful)",
+    color = NULL,
+    x = NULL,
+    y = "%"
+  ) +
+  theme_bw() +
+    theme(panel.border = element_blank(), legend.position = "bottom")
+  
+  
+
+
+
+```
+
+## Comparing consumer confidence measures
+```{r}
+# read michigan
+require(DatastreamDSWS2R)
+mydsws <- dsws$new()
+michigan <- mydsws$timeSeriesRequest(instrument = "USUMCONSH",
+                       datatype = "X",
+                       startDate = "1980-01-01",
+                       endDate = Sys.Date(),
+                       frequency = "M")
+
+db_consumer_measures <- tibble(month = zoo::index(michigan), value = as.vector(michigan)) %>% 
+  transmute(month = yearmonth(month),
+            series_id = "USUMCONSH",
+            value,
+            series_name = "US Univ of Michigan Consumer Sentiment") %>% 
+  as_tsibble(index = month, key = series_id) %>% 
+  bind_rows(filter(db, series_id == "USCNFCONQ"))
+
+plot_var(db_consumer_measures, c("USUMCONSH", "USCNFCONQ"))
+
+```
+
