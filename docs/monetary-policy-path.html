@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Dr. Paulo Gustavo Grahl, CFA" />
+
+<meta name="date" content="2022-03-24" />
+
+<title>Monetary Policy Path</title>
+
+<script src="site_libs/header-attrs-2.13/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Low Pass Macro</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/pgg1309/lpm">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Monetary Policy Path</h1>
+<h4 class="author">Dr. Paulo Gustavo Grahl, CFA</h4>
+<h4 class="date">2022-03-24</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2022-03-30
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>lpm/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version 1.7.0). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20220204code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20220204)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20220204code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20220204)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcompgg1309lpmtree9f338c7dab0cb671100fe6986aeb553d0805495dtargetblank9f338c7a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/pgg1309/lpm/tree/9f338c7dab0cb671100fe6986aeb553d0805495d" target="_blank">9f338c7</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcompgg1309lpmtree9f338c7dab0cb671100fe6986aeb553d0805495dtargetblank9f338c7a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version <a href="https://github.com/pgg1309/lpm/tree/9f338c7dab0cb671100fe6986aeb553d0805495d" target="_blank">9f338c7</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+
+Untracked files:
+    Untracked:  analysis/old-monetary-policy-path.Rmd
+    Untracked:  analysis/us-inflation-forecast.Rmd
+    Untracked:  analysis/us-inflation-simulation.Rmd
+    Untracked:  analysis/us-treasury-flows.Rmd
+    Untracked:  code/create_futures_table.R
+    Untracked:  code/download_mspd.R
+    Untracked:  code/download_public_debt.R
+    Untracked:  code/eurodollar_eda.R
+    Untracked:  code/fed-soma2.R
+    Untracked:  code/fed_soma_holdings.R
+    Untracked:  code/plot_cpi_charts.R
+    Untracked:  code/prepare_eurodollar_data.R
+    Untracked:  code/prepare_fedfunds_data.R
+    Untracked:  data/20220216-Fed-Soma_holdings.csv
+    Untracked:  data/eurodollar.rds
+    Untracked:  data/fedfunds.rds
+    Untracked:  data/figure2-original-paper.png
+    Untracked:  data/mspd/
+    Untracked:  delmelater.Rmd
+    Untracked:  output/ed_spread_table.rds
+    Untracked:  output/fed_holdings_timeseries.png
+    Untracked:  output/fed_treasury_wam.png
+    Untracked:  output/ff_spread_table.rds
+    Untracked:  output/mspd_processed/
+    Untracked:  output/old-ff_spread_table.rds
+    Untracked:  output/treasury_maturities_annual.png
+    Untracked:  output/treasury_maturities_monthly.png
+    Untracked:  output/x_ed_spread_table.rds
+    Untracked:  output/x_ff_spread_table.rds
+    Untracked:  tmp.csv
+
+Unstaged changes:
+    Modified:   code/README.md
+    Modified:   data/README.md
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with <code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>This short note explains some alternatives to extract the <em>expected path of monetary policy</em> from the fed funds and eurodollar futures.</p>
+<div id="fed-funds-futures" class="section level3">
+<h3>Fed funds futures</h3>
+<p>The value of a fed fund contract expiring <span class="math inline">\(i\)</span> months ahead is linked to the average of the effective overnight fed funds <em>during the calendar month of expiration</em>.</p>
+</div>
+<div id="eurodollar-futures" class="section level3">
+<h3>Eurodollar futures</h3>
+<p>The value of an eurodollar contract with an expiration <span class="math inline">\(i\)</span> quarters ahead is linked to the 3-month Libor rate observed on the expiration date.</p>
+</div>
+<div id="fed-funds-vs-eurodollar" class="section level3">
+<h3>Fed funds vs Eurodollar</h3>
+<p>The difference between a 3-month Libor and rolling over funds in the overnight fed funds rate is called <em>basis risk</em>. Since Libor rates include credit risk, this basis risk is not constant.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The chart does not include the most recent 3 months of data. Below, another look at the chart by removing periods where the basis exceeds 1 percent.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Below the table showing a summary statistic, where one can see that the <em>median basis risk</em> is around 0.19 percentage points.</p>
+<pre><code>   basis_risk      
+ Min.   :-0.22777  
+ 1st Qu.: 0.09297  
+ Median : 0.18646  
+ Mean   : 0.28593  
+ 3rd Qu.: 0.34406  
+ Max.   : 5.59328  </code></pre>
+<p>If we restrict the sample to start in 2010 we obtain a median basis risk of around 0.23 percentage points.</p>
+<pre><code>   basis_risk       
+ Min.   :-0.005625  
+ 1st Qu.: 0.157656  
+ Median : 0.233720  
+ Mean   : 0.280935  
+ 3rd Qu.: 0.365781  
+ Max.   : 1.588615  </code></pre>
+<p>If we restrict the sample to start in 2015 we obtain a median basis risk of around 0.26 percentage points.</p>
+<pre><code>   basis_risk       
+ Min.   :-0.005625  
+ 1st Qu.: 0.124883  
+ Median : 0.260889  
+ Mean   : 0.302090  
+ 3rd Qu.: 0.397813  
+ Max.   : 1.588615  </code></pre>
+</div>
+</div>
+<div id="basic-formulas" class="section level2">
+<h2>Basic formulas</h2>
+<p>Futures rates in fed funds and eurodollar contracts can be expressed as the sum of the expected future level of the underlying interest rate and a <em>risk premium</em>:</p>
+<p><span class="math display">\[ ff_t(i) = E_t\left[\bar{ff}(i)\right] + \rho^{ff}_t(i)\]</span> <span class="math display">\[ ed_t(i) = E_t\left[lib(i)\right] + \rho^{ed}_t(i)\]</span></p>
+<p>For the eurodollar contract, one can also show it in terms of the expected fed funds rate by adding the expected basis risk.</p>
+<p><span class="math display">\[ ed_t(i) = E_t\left[\bar{ff}(i)\right] + \rho^{lib}_t(i) + \rho^{ed}_t(i)\]</span> where the expected basis risk is given by:</p>
+<p><span class="math display">\[ \rho^{lib}_t(i) = E_t\left[lib(i) - \bar{ff}(i) \right]\]</span></p>
+<p>What the formulas above show is that, both fed funds and eurodollar futures can be used to infer the <em>expected path for fed funds rate</em> once all the premia are taken into account.</p>
+</div>
+<div id="constant-risk-premia" class="section level2">
+<h2>Constant risk premia</h2>
+<p>If one assumes that (a) risk premia, for each contract tenor, is constant, and (b) expected changes in monetary policy have averaged zero over the sample period, then the expected path for fed funds rate can be obtained subtracting an estimate of the risk premia from the future rates.</p>
+<p>On other words, if expectations errors average zero, the risk premia on each contract will be the average level of futures contracts relative to the level of the overnight fed funds rate.</p>
+<p>The chart below shows this measure of risk premia, where the rate implied by each contract is shown at the middle of the period covered by that contract. There is some overlapping as the fed funds futures include up to the first five months while the eurodollar contracts included range from one to twenty quarters.</p>
+<p>The chart also shows the period up to June 2002 to be compatible with the original paper, but extends to include the most recent period, also showing how the shape of the risk premia curve compares in recent periods.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="expected-path" class="section level3">
+<h3>Expected path</h3>
+<p>The chart below reproduces <em>figure 2</em> in the original paper – showing the methodology adopted here, despite being updated to include future contracts after 2002, resulted in similar expected paths for the dates considered in the paper.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="../data/figure2-original-paper.png" /></p>
+</div>
+<div id="problems-with-constant-risk-premia" class="section level3">
+<h3>Problems with constant risk premia</h3>
+<p>One potential problem with the idea of a constant risk premia is that the historical risk curve is too steep. Even looking only at the sample after 2002, the risk premia for the 4-year contract is close to 200bp! – a high number given the current low terminal rate environment and the perception that rates do not have the same room to increase when compared to the history before 2008.</p>
+<p>Below the implied expected path using the <em>constant risk premia assumption</em> for more recent periods:</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>As the chart above shows, such steep risk premia curve implies both (a) a too soon peak in the expected funds rate and (b) that expected rates will too often be <em>negative</em> – both aspects do not seem to resemble the reality in the markets.</p>
+</div>
+<div id="simple-alternative" class="section level3">
+<h3>Simple alternative</h3>
+<p>One possibility is to restrict the sample to calculate the risk premia to after 2015.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>But even restricting the sample, one can see that the risk premia curve remains steep; but overall there is a reduction of around 25-50bp in the premia throughout the curve.</p>
+<p>The chart below plots the expected path of fed funds rates using the risk premia curve calculated with data after 2015.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="variable-risk-premia" class="section level2">
+<h2>Variable risk premia</h2>
+<p>Part of the risk premia is due to <em>basis risk</em> - which varies sharply due to credit concerns (see previous chart). But to adjust for a variable basis risk we would need market pricing for basis risk into the future. While this market does exist (basis swap market), the paper mentions that it is not a liquid one (note: I have not checked to see whether that has changed).</p>
+<p>One possibility is to assume that basis risk changes over time but is independent of the horizon of the futures contract, or <span class="math inline">\(\rho^{lib}_t(i) = c_t\)</span>. The table below shows that, on average, the basis spread does not depend on the horizon of the contract - therefore the hypothesis seems reasonable.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>In this case, the slope of the term structure of futures contracts on any given day would reflect either (a) monetary policy expectations or (b) the other components of risk premia <span class="math inline">\(\rho^{ff}_t(i)\)</span> and <span class="math inline">\(\rho^{ed}_t(i)\)</span>. This components of the risk premia will depend on the horizon of the contract (<span class="math inline">\(i\)</span>).</p>
+<blockquote>
+<p>Identification assumption: expected path of monetary policy levels out within a four year horizon.</p>
+</blockquote>
+<p>The chart below plots the slope of the eurodollar curve between years 4 and 5, expressed in basis points per month (risk premia).</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The term premia ranges are shown below:</p>
+<pre><code>  term_premia     
+ Min.   :-0.3332  
+ 1st Qu.: 1.1308  
+ Median : 1.7935  
+ Mean   : 2.3858  
+ 3rd Qu.: 3.3858  
+ Max.   : 7.7607  </code></pre>
+<p>And below the term premia ranges since 2015:</p>
+<pre><code>  term_premia     
+ Min.   :-0.3332  
+ 1st Qu.: 0.8226  
+ Median : 1.4608  
+ Mean   : 1.4553  
+ 3rd Qu.: 1.8975  
+ Max.   : 3.8922  </code></pre>
+<p>The chart below shows some recent examples of the term structure of the eurodollar future rates. It is clear that often the far end of the curve has an upward sloping shape, reflecting the term premia.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-17-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="one-factor-model" class="section level3">
+<h3>One factor model</h3>
+<p>The table below summarizes the <em>basis</em> statistics since 2015. It is a narrow range up to 2 years, which supports the idea of using a constant basis over this time horizon.</p>
+<pre><code>     basis       
+ Min.   :0.2031  
+ 1st Qu.:0.2216  
+ Median :0.2319  
+ Mean   :0.2369  
+ 3rd Qu.:0.2532  
+ Max.   :0.2939  </code></pre>
+<p>One can then subtract the median basis and obtain and <em>adjusted eurodollar contract</em>:</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-19-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Average term premia since 2015 (<span class="math inline">\(s_t\)</span>):</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-20-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Table below shows the statistics of the term premia since 2015:</p>
+<pre><code>  term_premia     
+ Min.   :-0.3332  
+ 1st Qu.: 0.8226  
+ Median : 1.4608  
+ Mean   : 1.4553  
+ 3rd Qu.: 1.8975  
+ Max.   : 3.8922  </code></pre>
+<p>One possible model, then, is to assume that the slope of the futures curve is proportional to the term premia:</p>
+<p><span class="math display">\[
+\rho_t^{ff}(i) = \beta^{ff}(i) \times s_t \\ \rho_t^{ed}(i) = \beta^{ed}(i) \times s_t
+\]</span></p>
+<p>where <span class="math inline">\(\beta(i)\)</span> are the factor loadings, which are time invariant.</p>
+<p>The factor loadings are then calculated by dividing the <em>adjusted</em> average shape of the eurodollar futures by the average term factor (slope factor, <span class="math inline">\(s_t\)</span>).</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-22-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="fed-funds-expectation" class="section level3">
+<h3>Fed funds expectation</h3>
+<p>Under the structure of the risk premia assumed, rates on eurodollar futures with expiration 4 and 5 years will be:</p>
+<p><span class="math display">\[
+fut_t^{ed}(4y) = ff_t^* + c_t + \beta^{ed}(4y).s_t \\ fut_t^{ed}(5y) = ff_t^* + c_t + (1+\beta^{ed}(4y)).s_t
+\]</span></p>
+<p>Now, to infer what is the expected fed funds two-years ahead one can build a portfolio which is long one unit of 2y, long <span class="math inline">\(\beta^{ed}(2y)\)</span> units of 4y and short <span class="math inline">\(\beta^{ed}(2y)\)</span> units of 5y:</p>
+<p><span class="math display">\[
+fut_t^{ed}(2y) + \beta^{ed}(2y)\left[ fut_t^{ed}(4y) - fut_t^{ed}(5y) \right] = \\ = fut_t^{ed}(2y) - \beta^{ed}(2y).s_t \\ = fut_t^{ed}(2y) - \rho_t^{ed}(2y) \\ = E_t\left[\bar{ff}(2y)\right] + c_t
+\]</span></p>
+<p>So the result of this portfolio is the expected fed funds plus basis risk. The chart below plots this:</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-24-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Zoom: we can see that current expected fed funds are close to the peak in late 2018… BUT with a different inflation environment (so real rates not as high as 2018).</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-25-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Expected policy rate under time-varying and constant risk premia.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-26-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="deviation-from-long-run-level" class="section level3">
+<h3>Deviation from long-run level</h3>
+<p>Another alternative is to consider a long position of one unit of <span class="math inline">\(fut_t^{ed}(2y)\)</span> and <span class="math inline">\(\beta^{ed}(4y)-\beta^{ed}(2y)\)</span> units of <span class="math inline">\(fut_t^{ed}(5y)\)</span> and a short position of <span class="math inline">\(1 + \beta^{ed}(4y)-\beta^{ed}(2y)\)</span> units of <span class="math inline">\(fut_t^{ed}(4y)\)</span>. The value of this portfolio is:</p>
+<p><span class="math display">\[
+fut_t^{ed}(2y)-\left(1+\beta^{ed}(4y) - \beta^{ed}(2y)\right).fut_t^{ed}(4y) + \left(\beta^{ed}(4y) - \beta^{ed}(2y)\right).fut_t^{ed}(5y) = \\
+fut_t^{ed}(2y) - fut_t^{ed}(4y) + \beta^{ed}(2y)(fut_t^{ed}(4y) - fut_t^{ed}(5y)) -\beta^{ed}(4y)(fut_t^{ed}(4y)-fut_t^{ed}(5y) = \\
+fut_t^{ed}(2y) - fut_t^{ed}(4y) - \beta^{ed}(2y).s_t + \beta^{ed}(4y).s_t = \\
+fut_t^{ed}(2y) - fut_t^{ed}(4y) - \rho_t^{ed}(2y) + \rho_t^{ed}(4y) = \\
+fut_t^{ed}(2y) - \rho_t^{ed}(2y) - (fut_t^{ed}(4y)-\rho_t^{ed}(4y)) = \\
+E_t\left[\bar{ff}(2y)\right] + c_t - (ff_t^* - c_t) = \\
+E_t\left[\bar{ff}(2y)\right] - ff_t^*
+\]</span></p>
+<p>In words, the value of this portfolio is the expected deviation of fed funds rate from its long-run level, or a measure of the stance of monetary policy.</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-27-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Zoom:</p>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-28-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="miscellaneous" class="section level2">
+<h2>Miscellaneous</h2>
+<p><img src="figure/monetary-policy-path.Rmd/unnamed-chunk-29-1.png" width="672" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre><code>R version 4.1.2 (2021-11-01)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19044)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] forcats_0.5.1     stringr_1.4.0     purrr_0.3.4       readr_2.1.2      
+ [5] tidyverse_1.3.1   fable_0.3.1       feasts_0.2.2      fabletools_0.3.2 
+ [9] tsibbledata_0.4.0 tsibble_1.1.1     ggplot2_3.3.5     lubridate_1.8.0  
+[13] tidyr_1.2.0       dplyr_1.0.8       tibble_3.1.6      fpp3_0.4.0       
+[17] workflowr_1.7.0  
+
+loaded via a namespace (and not attached):
+ [1] httr_1.4.2           sass_0.4.1           jsonlite_1.8.0      
+ [4] warp_0.2.0           modelr_0.1.8         bslib_0.3.1         
+ [7] assertthat_0.2.1     getPass_0.2-2        distributional_0.3.0
+[10] highr_0.9            cellranger_1.1.0     yaml_2.3.5          
+[13] lattice_0.20-45      pillar_1.7.0         backports_1.4.1     
+[16] glue_1.6.2           digest_0.6.29        promises_1.2.0.1    
+[19] rvest_1.0.2          colorspace_2.0-3     htmltools_0.5.2     
+[22] httpuv_1.6.5         pkgconfig_2.0.3      broom_0.7.12        
+[25] haven_2.4.3          scales_1.1.1         processx_3.5.3      
+[28] slider_0.2.2         whisker_0.4          later_1.3.0         
+[31] tzdb_0.3.0           git2r_0.30.1         generics_0.1.2      
+[34] farver_2.1.0         ellipsis_0.3.2       withr_2.5.0         
+[37] cli_3.2.0            magrittr_2.0.3       crayon_1.5.1        
+[40] readxl_1.4.0         evaluate_0.15        ps_1.6.0            
+[43] fs_1.5.2             fansi_1.0.3          anytime_0.3.9       
+[46] xml2_1.3.3           tools_4.1.2          hms_1.1.1           
+[49] lifecycle_1.0.1      munsell_0.5.0        reprex_2.0.1        
+[52] callr_3.7.0          compiler_4.1.2       jquerylib_0.1.4     
+[55] rlang_1.0.2          grid_4.1.2           rstudioapi_0.13     
+[58] rappdirs_0.3.3       labeling_0.4.2       rmarkdown_2.13      
+[61] gtable_0.3.0         DBI_1.1.2            R6_2.5.1            
+[64] zoo_1.8-9            knitr_1.38           fastmap_1.1.0       
+[67] utf8_1.2.2           rprojroot_2.0.2      stringi_1.7.6       
+[70] Rcpp_1.0.8.3         vctrs_0.4.0          dbplyr_2.1.1        
+[73] tidyselect_1.1.2     xfun_0.30           </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
