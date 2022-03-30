@@ -1,0 +1,972 @@
+---
+title: "Monetary Policy Path"
+author: "Dr. Paulo Gustavo Grahl, CFA"
+date: "2022-03-24"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  include = TRUE
+)
+```
+
+```{r}
+require(fpp3)
+require(tidyverse)
+
+# functions --------------------------------------------------------------------
+# consolidate spread table
+consolidate_spread <- function(spread_table, stype) {
+  spread_table %>%
+    summarize(across(starts_with("t"), mean)) %>%
+    pivot_longer(everything()) %>%
+    mutate(
+      tenor = duration(parse_number(name)/30, 'months'),
+      q = tenor / duration(3, units = "month"),
+      type = stype
+    )
+}
+
+# consolidate spread table - using trimmed mean - robust
+consolidate_spread_trim <- function(spread_table, stype, p = 0) {
+  spread_table %>%
+    summarize(across(starts_with("t"), ~ mean(.x, trim = p))) %>%
+    pivot_longer(everything()) %>%
+    mutate(
+      tenor = ddays(parse_number(name)),
+      q = tenor / duration(3, units = "month"),
+      type = stype
+    )
+}
+
+
+# function to fit a spread curve
+spread_fit <- function(tenor, stype, spread_table) {
+  splinefun(x = filter(spread_table, type == stype)$q,
+            y = filter(spread_table, type == stype)$value,
+            method = "natural")(tenor)
+}
+
+# Function to fit an yield curve to the spread
+curve_fit <- function(refday, tenor, fftable) {
+  sel_ff <- filter(fftable, day == refday)
+  splinefun(x = sel_ff$duration,
+            y = sel_ff$spread,
+            method = "natural")(tenor)
+}
+
+# Function to fit an yield curve to the RATE
+rate_curve_fit <- function(refday, tenor, fftable) {
+  sel_ff <- filter(fftable, day == refday)
+  splinefun(x = sel_ff$duration,
+            y = sel_ff$rate,
+            method = "natural")(tenor)
+}
+
+
+
+# load data -------------------------------------------------------------------
+
+# prepare_eurodollar_data.R
+ed <- read_rds("data/eurodollar.rds") # eurodollar
+
+# prepare_fedfunds_data.R
+ff <- read_rds("data/fedfunds.rds")   # fed funds
+
+cash <- readxl::read_excel(
+  "E:/RData/DATASTREAM/Fedfunds-Libor.xlsm",
+  col_types = c("date", "numeric", "numeric", "numeric")) # cash rates
+
+# add basis risk to cash rates ----------------------------
+cash <- cash %>%
+  transmute(day = as_date(Name),
+            libor = `RFV US DOLLAR 3M DEPOSIT - MIDDLE RATE`,
+            fedfunds = `US FED FUNDS EFF RATE (D) - MIDDLE RATE`,
+            fftarget = `US FEDERAL FUNDS TARGET RATE - MIDDLE RATE`) %>%
+  as_tsibble(index = day) %>%
+  # Add future fed funds average to compare with libor
+  mutate(
+   ffavg = slider::slide_index_dbl(
+    fedfunds,
+    day,
+    mean,
+    .before = 0,
+    .after = days(89),
+    .complete = TRUE
+  ),
+  basis_risk = libor - ffavg
+)
+
+
+
+# Using Fed funds with expiration out to SIX months
+# and Eurodollar futures with expiration out to five years
+
+# Fed funds since Dec 1992
+ff_mod <- filter(ff, day >= "1992-12-01") %>%
+  transmute(day, name, value, rate = 100-value,
+            duration = last_trade - days(15) - day) %>%
+  #add fed funds and calculate spread
+  left_join(select(cash, day, fedfunds, fftarget, libor), by = 'day') %>%
+  # calculate avg fed funds month to date
+  group_by(yearmonth(day), name) %>% 
+  mutate(ffavg = cumsum(fedfunds),
+         nobs = 1, nobs = cumsum(nobs),
+         ffavg = ffavg / nobs) %>%
+  ungroup() %>% 
+  select(-nobs, -`yearmonth(day)`) %>% 
+  # calculate spread over AVG month to date ff
+  mutate(spread = rate - ffavg,
+         spread_libor = rate - libor) %>% 
+  filter(duration <= 821.8125)
+
+# Eurodollar since Dec 1992
+ed_mod <- filter(ed, day >= "1992-12-01") %>%
+  transmute(day, name, value, rate = 100-value,
+            duration = last_trade +days(45) - day) %>%
+  # add libor and calculate spread
+  left_join(select(cash, day, fedfunds, fftarget, libor), by = 'day') %>%
+  # calculate avg fed funds month to date
+  group_by(yearmonth(day), name) %>% 
+  mutate(ffavg = cumsum(fedfunds),
+         nobs = 1, nobs = cumsum(nobs),
+         ffavg = ffavg / nobs) %>%
+  ungroup() %>% 
+  select(-nobs, -`yearmonth(day)`) %>% 
+  # calculate spread
+  mutate(spread = rate - ffavg,
+         spread_libor = rate - libor) %>%
+  # select only shorter than 5 years
+  filter(duration <= 1826.25)
+
+
+# Create table with spreads (obs: SLOW) - around 30 min
+ # run the appropriated code if needed
+# spread = rate_t - FF AVG_o
+
+ff_spread_table <- read_rds("output/ff_spread_table.rds")
+ed_spread_table <- read_rds("output/ed_spread_table.rds")
+```
+
+## Introduction
+
+This short note explains some alternatives to extract the *expected path of monetary policy* from the fed funds and eurodollar futures.
+
+### Fed funds futures
+
+The value of a fed fund contract expiring $i$ months ahead is linked to the average of the effective overnight fed funds *during the calendar month of expiration*.
+
+### Eurodollar futures
+
+The value of an eurodollar contract with an expiration $i$ quarters ahead is linked to the 3-month Libor rate observed on the expiration date.
+
+### Fed funds vs Eurodollar
+
+The difference between a 3-month Libor and rolling over funds in the overnight fed funds rate is called *basis risk*. Since Libor rates include credit risk, this basis risk is not constant.
+
+```{r}
+ggplot(cash, aes(x = day, y = basis_risk)) +
+  geom_line() +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n = 20)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  labs(
+    title = "Basis risk",
+    subtitle = "3-month Libor minus effective fed funds rate over the same 3 month period",
+    x = NULL,
+    y = "percentage points"
+  )
+```
+
+The chart does not include the most recent 3 months of data. Below, another look at the chart by removing periods where the basis exceeds 1 percent.
+
+```{r}
+ggplot(cash, aes(x = day, y = basis_risk)) +
+  geom_line() +
+   scale_x_date(
+    breaks = scales::breaks_pretty(n = 20)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  labs(
+    title = "Basis risk",
+    subtitle = "3-month Libor minus effective fed funds rate over the same 3 month period",
+    x = NULL,
+    y = "percentage points"
+  ) +
+  coord_cartesian(ylim = c(NA, 1))
+
+```
+
+Below the table showing a summary statistic, where one can see that the *median basis risk* is around `r drop_na(cash) %>% pull(basis_risk) %>% median() %>% round(2)` percentage points.
+
+```{r}
+cash %>% drop_na() %>% as_tibble() %>% select(basis_risk) %>% summary() 
+```
+
+If we restrict the sample to start in 2010 we obtain a median basis risk of around `r drop_na(filter(cash, day >= "2010-01-01")) %>% pull(basis_risk) %>% median() %>% round(2)` percentage points.
+
+```{r}
+filter(cash, day >= "2010-01-01") %>% drop_na() %>% as_tibble() %>% select(basis_risk) %>% summary() 
+```
+
+If we restrict the sample to start in 2015 we obtain a median basis risk of around `r drop_na(filter(cash, day >= "2015-01-01")) %>% pull(basis_risk) %>% median() %>% round(2)` percentage points.
+
+```{r}
+filter(cash, day >= "2015-01-01") %>% drop_na() %>% as_tibble() %>% select(basis_risk) %>% summary() 
+```
+
+## Basic formulas
+
+Futures rates in fed funds and eurodollar contracts can be expressed as the sum of the expected future level of the underlying interest rate and a *risk premium*:
+
+$$ ff_t(i) = E_t\left[\bar{ff}(i)\right] + \rho^{ff}_t(i)$$ $$ ed_t(i) = E_t\left[lib(i)\right] + \rho^{ed}_t(i)$$
+
+For the eurodollar contract, one can also show it in terms of the expected fed funds rate by adding the expected basis risk.
+
+$$ ed_t(i) = E_t\left[\bar{ff}(i)\right] + \rho^{lib}_t(i) + \rho^{ed}_t(i)$$ where the expected basis risk is given by:
+
+$$ \rho^{lib}_t(i) = E_t\left[lib(i) - \bar{ff}(i) \right]$$
+
+What the formulas above show is that, both fed funds and eurodollar futures can be used to infer the *expected path for fed funds rate* once all the premia are taken into account.
+
+## Constant risk premia
+
+If one assumes that (a) risk premia, for each contract tenor, is constant, and (b) expected changes in monetary policy have averaged zero over the sample period, then the expected path for fed funds rate can be obtained subtracting an estimate of the risk premia from the future rates.
+
+On other words, if expectations errors average zero, the risk premia on each contract will be the average level of futures contracts relative to the level of the overnight fed funds rate.
+
+The chart below shows this measure of risk premia, where the rate implied by each contract is shown at the middle of the period covered by that contract. There is some overlapping as the fed funds futures include up to the first five months while the eurodollar contracts included range from one to twenty quarters.
+
+The chart also shows the period up to June 2002 to be compatible with the original paper, but extends to include the most recent period, also showing how the shape of the risk premia curve compares in recent periods.
+
+```{r}
+# uses trimm medan to consolidate spread
+# but there is not much difference (not shown here)
+
+average_spread <- function(sel, label, p = 0.3) {
+  bind_rows(
+    consolidate_spread_trim(filter(ff_spread_table, {{sel}}),
+    'ff',
+    0.3) %>% mutate(sample = label)
+    ,
+    consolidate_spread_trim(filter(ed_spread_table, {{sel}}),
+    'ed',
+    0.3) %>% mutate(sample = label)
+  )
+}
+
+bind_rows(
+  average_spread(day < "2002-07-01", 'up to June 2002'),
+  average_spread(day >= "2015-01-01", 'since Jan 2015'),
+  average_spread(day >= "2002-07-01" & day < "2015-01-01", 'from July 2002 to Dec 2014')
+) %>%
+  # Limit fed funds up to 2 quarters
+  filter(type == 'ff' & q <= 2 | type == 'ed') %>% 
+  pivot_wider(names_from = sample) %>% 
+  ggplot(aes(x=q, group = type)) +
+  geom_line(aes(y = `up to June 2002`, color = "up to Jun 2002")) +
+  geom_line(aes(y = `since Jan 2015`, color = "since Jan 2015")) +
+  geom_line(aes(y = `from July 2002 to Dec 2014`, color = "July 2002 to Dec 2014")) +
+  scale_x_continuous(breaks = scales::breaks_extended(n = 20)) +
+  scale_y_continuous(breaks = scales::breaks_extended(n = 10)) +
+  labs(
+    title = "Average Shape of Futures Curves",
+    x = "quarters ahead",
+    y = "percentage points",
+    color = NULL,
+    caption = "Average level of fed funds and eurodollar futures,\n expressed relative to the level of the overnight fed funds rate."
+  ) +
+  theme(legend.position = 'bottom')
+
+```
+
+### Expected path
+
+The chart below reproduces *figure 2* in the original paper -- showing the methodology adopted here, despite being updated to include future contracts after 2002, resulted in similar expected paths for the dates considered in the paper.
+
+```{r}
+# spread_table <- bind_rows(
+#   consolidate_spread(ff_spread_table, 'ff') %>% filter(q <=2),
+#   consolidate_spread(ed_spread_table, 'ed')
+# )
+
+spread_table <- average_spread(TRUE, 'full sample')
+
+
+bind_rows(
+  filter(ff_mod, day %in% as_date(c("1998-05-01", "2001-01-02", "2002-03-20"))) %>%
+    mutate(type = 'ff') %>% filter(duration <= 214),
+  filter(ed_mod, day %in% as_date(c("1998-05-01", "2001-01-02", "2002-03-20"))) %>%
+    mutate(type = 'ed')
+  ) %>% 
+  mutate(
+    day_type = paste(type, day, sep="-"),
+    q = duration / duration(3, "month"),
+    premia = map2_dbl(q, type, spread_fit, spread_table),
+    eff = rate - premia
+  ) %>% 
+  ggplot(aes(x=q, y = eff, group = day_type, color = as.character(day))) + 
+  geom_line(size = 1) +
+  scale_x_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  labs(
+    title = "Expected policy path under constant risk premium",
+    x = "quarters",
+    y = "expected fed funds rate",
+    color = "As of:"
+  ) +
+  theme(legend.position = 'bottom') +
+  coord_cartesian(ylim = c(0, NA), xlim = c(0, 12), expand = FALSE)
+```
+
+![](../data/figure2-original-paper.png)
+
+### Problems with constant risk premia
+
+One potential problem with the idea of a constant risk premia is that the historical risk curve is too steep. Even looking only at the sample after 2002, the risk premia for the 4-year contract is close to 200bp! -- a high number given the current low terminal rate environment and the perception that rates do not have the same room to increase when compared to the history before 2008.
+
+Below the implied expected path using the *constant risk premia assumption* for more recent periods:
+
+```{r}
+bind_rows(
+  filter(ff_mod, day %in% as_date(c("2021-10-15", "2022-03-29", "2019-07-15", "2017-01-16"))) %>% mutate(type = 'ff') %>% filter(duration <= 548),
+  filter(ed_mod, day %in% as_date(c("2021-10-15", "2022-03-29", "2019-07-15", "2017-01-16"))) %>% mutate(type = 'ed')) %>% 
+  mutate(
+    day_type = paste(type, day, sep="-"),
+    q = duration / duration(3, "month"),
+    premia = map2_dbl(q, type, spread_fit, spread_table),
+     eff = rate - premia
+  ) %>% 
+  ggplot(aes(x=q, y = eff, group = day_type, color = as.character(day), lty = type)) + 
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0) +
+  scale_x_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  labs(
+    title = "Expected policy path under constant risk premium",
+    subtitle = "Using full sample",
+    x = "quarters",
+    y = "expected fed funds rate",
+    color = "As of:",
+    lty = "contract"
+  ) +
+  theme(legend.position = 'bottom') +
+  coord_cartesian(xlim = c(0, 14), ylim = c(-0.5, 2.5), expand = FALSE)
+```
+
+As the chart above shows, such steep risk premia curve implies both (a) a too soon peak in the expected funds rate and (b) that expected rates will too often be *negative* -- both aspects do not seem to resemble the reality in the markets.
+
+### Simple alternative
+
+One possibility is to restrict the sample to calculate the risk premia to after 2015.
+
+```{r}
+cash %>% 
+  filter(day >= "2002-01-01") %>% 
+  select(day, libor, fedfunds) %>% 
+  pivot_longer(-day) %>% 
+  ggplot(aes(x = day, y = value, color = name)) +
+  geom_line(size = 1) +
+  scale_x_date(
+    breaks =scales::breaks_pretty(n = 15)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  labs(
+    title = "Short rates",
+    x = NULL,
+    y = "%",
+    color = NULL
+  ) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+# restrict the sample
+# recent_spread_table <- bind_rows(
+#   consolidate_spread(filter(ff_spread_table, day >= "2012-01-01"), 'ff'),
+#   consolidate_spread(filter(ed_spread_table, day >= "2012-01-01"), 'ed')
+# )
+
+recent_spread_table <- average_spread(day >= "2015-01-01", 'since 2015')
+
+
+
+bind_rows(
+  spread_table,
+  recent_spread_table
+) %>%
+  pivot_wider(names_from = sample) %>% 
+  ggplot(aes(x=q, group = type, lty = type)) +
+  geom_line(aes(y = `full sample`, color = "full sample")) +
+  geom_line(aes(y = `since 2015`, color = "since 2015")) +
+  scale_x_continuous(breaks = scales::breaks_extended(n = 20)) +
+  scale_y_continuous(breaks = scales::breaks_extended(n = 10)) +
+  labs(
+    title = "Average Shape of Futures Curves",
+    x = "quarters ahead",
+    y = "percentage points",
+    color = NULL,
+    lty = 'contract',
+    caption = "Average level of fed funds and eurodollar futures,\n expressed relative to the level of the overnight fed funds rate."
+  ) +
+  theme(legend.position = 'bottom')
+
+
+```
+
+But even restricting the sample, one can see that the risk premia curve remains steep; but overall there is a reduction of around 25-50bp in the premia throughout the curve.
+
+The chart below plots the expected path of fed funds rates using the risk premia curve calculated with data after 2015.
+
+```{r}
+bind_rows(
+  filter(ff_mod, day %in% as_date(c("2021-10-15", "2022-03-29", "2019-07-15", "2017-01-16"))) %>% mutate(type = 'ff') %>% filter(duration <= 548),
+  filter(ed_mod, day %in% as_date(c("2021-10-15", "2022-03-29", "2019-07-15", "2017-01-16"))) %>% mutate(type = 'ed')) %>% 
+  mutate(
+    day_type = paste(type, day, sep="-"),
+    q = duration / duration(3, "month"),
+    # use recent spread table
+    premia = map2_dbl(q, type, spread_fit, recent_spread_table),
+    eff = rate - premia
+  ) %>% 
+  ggplot(aes(x=q, y = eff, group = day_type, color = as.character(day), lty = type)) + 
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0) +
+  scale_x_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  labs(
+    title = "Expected policy path under constant risk premium",
+    subtitle = "Using sample since 2015",
+    x = "quarters",
+    y = "expected fed funds rate",
+    color = "As of:",
+    lty = "contract"
+  ) +
+  theme(legend.position = 'bottom') +
+  coord_cartesian(xlim = c(0, 14), ylim = c(-0.5, 2.75), expand = FALSE)
+
+```
+
+## Variable risk premia
+
+Part of the risk premia is due to *basis risk* - which varies sharply due to credit concerns (see previous chart). But to adjust for a variable basis risk we would need market pricing for basis risk into the future. While this market does exist (basis swap market), the paper mentions that it is not a liquid one (note: I have not checked to see whether that has changed).
+
+One possibility is to assume that basis risk changes over time but is independent of the horizon of the futures contract, or $\rho^{lib}_t(i) = c_t$. The table below shows that, on average, the basis spread does not depend on the horizon of the contract - therefore the hypothesis seems reasonable.
+
+```{r}
+recent_spread_table %>%
+  pivot_wider(names_from = type) %>% 
+  mutate(ed_interp = zoo::na.approx(ed, na.rm = FALSE),
+         basis = ed_interp - ff
+         ) %>% 
+  select(q, ff, ed, basis) %>% 
+  pivot_longer(-q) %>% 
+  drop_na() %>% 
+  ggplot(aes(x=q, y = value, group = name, color = name)) +
+  geom_line() +
+  scale_x_continuous(breaks = scales::breaks_extended(n = 20)) +
+  scale_y_continuous(breaks = scales::breaks_extended(n = 10)) +
+  labs(
+    title = "Average Shape of Futures Curves",
+    x = "quarters ahead",
+    y = "percentage points",
+    color = NULL,
+    lty = 'contract',
+    caption = "Average level of fed funds and eurodollar futures since 2015,\n expressed relative to the level of the overnight fed funds rate."
+  ) +
+  theme(legend.position = 'bottom')
+
+```
+
+In this case, the slope of the term structure of futures contracts on any given day would reflect either (a) monetary policy expectations or (b) the other components of risk premia $\rho^{ff}_t(i)$ and $\rho^{ed}_t(i)$. This components of the risk premia will depend on the horizon of the contract ($i$).
+
+> Identification assumption: expected path of monetary policy levels out within a four year horizon.
+
+The chart below plots the slope of the eurodollar curve between years 4 and 5, expressed in basis points per month (risk premia).
+
+```{r}
+ed_4y <- map_dbl(unique(ed_mod$day), curve_fit, 1461, ed_mod)
+ed_5y <- map_dbl(unique(ed_mod$day), curve_fit, 1826.25, ed_mod)
+
+term_factor <- tibble(day = unique(ed_mod$day),
+                      ed_4y = ed_4y,
+                      ed_5y = ed_5y) %>%
+  mutate(term_premia = (ed_5y - ed_4y) / 12 * 100)
+
+term_factor %>% 
+  ggplot(aes(x = day, y = term_premia)) +
+  geom_line() +
+  scale_x_date(breaks = scales::breaks_pretty(n=20)) +
+  scale_y_continuous(breaks = scales::breaks_extended(n = 10)) +
+  labs(title = "Term Premia Factor",
+       subtitle = "difference between futures expiring 5y ahead and 4y ahead",
+       x= NULL,
+       y = "Basis Points Per Month")
+
+```
+
+The term premia ranges are shown below:
+
+```{r}
+select(term_factor, term_premia) %>% summary()
+```
+
+And below the term premia ranges since 2015:
+
+```{r}
+term_factor %>%  
+  filter(day >= "2015-01-01") %>% 
+  select(term_premia) %>% summary()
+```
+
+The chart below shows some recent examples of the term structure of the eurodollar future rates. It is clear that often the far end of the curve has an upward sloping shape, reflecting the term premia.
+
+```{r}
+ref_day <- c("2019-01-14", "2020-01-14", "2021-01-14", "2022-01-14") 
+ed_mod %>% 
+  filter(day %in% as_date(ref_day)) %>% 
+  mutate(q = duration / duration(3, "month")) %>% 
+  ggplot(aes(x = day+duration, y = rate, color = factor(day))) +
+  geom_line(size = 1) +
+  scale_x_date(breaks = scales::breaks_pretty(n = 12)) +
+  scale_y_continuous(breaks = scales::breaks_extended(n = 12)) +
+  geom_point() +
+  labs(
+    title = "Term Structure of Eurodollar Futures Rates",
+    subtitle = paste0("As of: ", paste0(format.Date(ref_day, "%b %d, %Y "), collapse = ", ")),
+    x = "Expiration Date",
+    y = "%",
+    color = NULL
+  ) +
+  theme(legend.position = "bottom")
+```
+
+### One factor model
+
+The table below summarizes the *basis* statistics since 2015. It is a narrow range up to 2 years, which supports the idea of using a constant basis over this time horizon.
+
+```{r}
+ recent_spread_table %>%
+  pivot_wider(names_from = type) %>% 
+  mutate(ed_interp = zoo::na.approx(ed, na.rm = FALSE),
+         basis = ed_interp - ff
+         ) %>% 
+  select(basis) %>% drop_na() %>% summary()
+
+median_basis <- recent_spread_table %>%
+  pivot_wider(names_from = type) %>% 
+  mutate(ed_interp = zoo::na.approx(ed, na.rm = FALSE),
+         basis = ed_interp - ff
+         ) %>% pull(basis) %>% median(na.rm=TRUE)
+
+```
+
+One can then subtract the median basis and obtain and *adjusted eurodollar contract*:
+
+```{r}
+  recent_spread_table %>%
+  pivot_wider(names_from = type) %>%  
+  mutate(ed_adjusted = ed - median_basis) %>% 
+  select(q, ff, ed, ed_adjusted) %>% 
+  pivot_longer(-q) %>% 
+  drop_na() %>% 
+  ggplot(aes(x=q, y = value, group = name, color = name)) +
+  geom_line() +
+  scale_x_continuous(breaks = scales::breaks_extended(n = 20)) +
+  scale_y_continuous(breaks = scales::breaks_extended(n = 10)) +
+  labs(
+    title = "Average Shape of Futures Curves",
+    x = "quarters ahead",
+    y = "percentage points",
+    color = NULL,
+    lty = 'contract',
+    caption = "Average level of fed funds and eurodollar futures since 2015,\n expressed relative to the level of the overnight fed funds rate."
+  ) +
+  theme(legend.position = 'bottom')
+
+```
+
+Average term premia since 2015 ($s_t$):
+
+```{r}
+term_factor %>% 
+  filter(day >= "2015-01-01") %>% 
+  ggplot(aes(x = day, y = term_premia)) +
+  geom_line() +
+  scale_x_date(breaks = scales::breaks_pretty(n=20),
+               labels = scales::label_date_short()) +
+  scale_y_continuous(breaks = scales::breaks_extended(n = 10)) +
+  labs(title = "Term Premia Factor",
+       subtitle = "difference between futures expiring 5y ahead and 4y ahead",
+       x= NULL,
+       y = "Basis Points Per Month")
+
+```
+
+Table below shows the statistics of the term premia since 2015:
+
+```{r}
+term_factor %>% 
+  filter(day >= "2015-01-01") %>% select(term_premia) %>% 
+  summary()
+
+median_term_factor <- term_factor %>% 
+  filter(day >= "2015-01-01") %>% pull(term_premia) %>% median()
+
+```
+
+One possible model, then, is to assume that the slope of the futures curve is proportional to the term premia:
+
+$$
+\rho_t^{ff}(i) = \beta^{ff}(i) \times s_t \\ \rho_t^{ed}(i) = \beta^{ed}(i) \times s_t
+$$
+
+where $\beta(i)$ are the factor loadings, which are time invariant.
+
+The factor loadings are then calculated by dividing the *adjusted* average shape of the eurodollar futures by the average term factor (slope factor, $s_t$).
+
+```{r}
+recent_spread_table %>%
+  pivot_wider(names_from = type) %>%  
+  mutate(ed_adjusted = ed - median_basis,
+         beta_ff = ff / (median_term_factor*12/100), 
+         beta_ed = ed_adjusted / (median_term_factor*12/100)) %>% 
+  select(q, beta_ff, beta_ed) %>% 
+  pivot_longer(-q) %>% 
+  drop_na() %>% 
+  ggplot(aes(x=q, y = value, group = name, color = name)) +
+  geom_line() +
+  scale_x_continuous(breaks = scales::breaks_extended(n = 20)) +
+  scale_y_continuous(breaks = scales::breaks_extended(n = 10)) +
+  labs(
+    title = "Estimated loadings",
+    x = "quarters ahead",
+    y = NULL,
+    color = NULL
+    
+  ) +
+  theme(legend.position = 'bottom')
+
+
+loadings_table <- recent_spread_table %>%
+  pivot_wider(names_from = type) %>%  
+  mutate(ed_adjusted = ed - median_basis,
+         beta_ff = ff / (median_term_factor*12/100), 
+         beta_ed = ed_adjusted / (median_term_factor*12/100)) %>% 
+  select(q, beta_ff, beta_ed) %>% 
+  mutate(beta = if_else(q <= 4, beta_ff, beta_ed),
+         beta = splinefun(q, beta, method = 'natural')(q)) %>% 
+  select(q, beta)
+           
+```
+
+### Fed funds expectation
+
+Under the structure of the risk premia assumed, rates on eurodollar futures with expiration 4 and 5 years will be:
+
+$$
+fut_t^{ed}(4y) = ff_t^* + c_t + \beta^{ed}(4y).s_t \\ fut_t^{ed}(5y) = ff_t^* + c_t + (1+\beta^{ed}(4y)).s_t
+$$
+
+Now, to infer what is the expected fed funds two-years ahead one can build a portfolio which is long one unit of 2y, long $\beta^{ed}(2y)$ units of 4y and short $\beta^{ed}(2y)$ units of 5y:
+
+$$
+fut_t^{ed}(2y) + \beta^{ed}(2y)\left[ fut_t^{ed}(4y) - fut_t^{ed}(5y) \right] = \\ = fut_t^{ed}(2y) - \beta^{ed}(2y).s_t \\ = fut_t^{ed}(2y) - \rho_t^{ed}(2y) \\ = E_t\left[\bar{ff}(2y)\right] + c_t
+$$
+
+So the result of this portfolio is the expected fed funds plus basis risk. The chart below plots this:
+
+```{r}
+trading_day <- filter(ed_mod, day >="2015-01-02") %>% pull(day) %>% unique()
+
+fut_ed_1y <- map_dbl(trading_day, rate_curve_fit, 365.25,  ed_mod)
+fut_ed_2y <- map_dbl(trading_day, rate_curve_fit, 730.5,   ed_mod)
+fut_ed_3y <- map_dbl(trading_day, rate_curve_fit, 1095.75, ed_mod )
+fut_ed_4y <- map_dbl(trading_day, rate_curve_fit, 1461,    ed_mod)
+fut_ed_5y <- map_dbl(trading_day, rate_curve_fit, 1826.25, ed_mod)
+
+beta_1y <- splinefun(loadings_table$q, loadings_table$beta, 'natural')(4)
+beta_2y <- splinefun(loadings_table$q, loadings_table$beta, 'natural')(8)
+beta_3y <- splinefun(loadings_table$q, loadings_table$beta, 'natural')(12)
+beta_4y <- splinefun(loadings_table$q, loadings_table$beta, 'natural')(16)
+
+# BASIS RISK UPDATED
+fut_ff_2m <- map_dbl(trading_day, rate_curve_fit, 60.875, ff_mod)
+fut_ed_3m <- map_dbl(trading_day, rate_curve_fit, 91.3125, ed_mod)
+
+```
+
+```{r}
+new_basis <- tibble(
+  day = trading_day,
+  ff_2m = fut_ff_2m,
+  ed_3m = fut_ed_3m
+) %>% 
+  mutate(new_basis = ed_3m - ff_2m)
+
+new_cash <- cash %>% 
+  left_join(new_basis, by = 'day') 
+
+tibble(day = trading_day, 
+       ed_1y = fut_ed_1y,
+       ed_2y = fut_ed_2y,
+       ed_3y = fut_ed_3y,
+       ed_4y = fut_ed_4y,
+       ed_5y = fut_ed_5y) %>% 
+  left_join(select(new_cash,day,basis_risk, new_basis, fedfunds), by = 'day') %>% 
+  mutate(
+    exp_1y_ff = ed_1y + beta_1y*(ed_4y - ed_5y) - new_basis,
+    exp_2y_ff = ed_2y + beta_2y*(ed_4y - ed_5y) - new_basis,
+    exp_3y_ff = ed_3y + beta_3y*(ed_4y - ed_5y) - new_basis
+    ) %>% 
+  select(day, exp_2y_ff, exp_1y_ff, fedfunds, ed_1y) %>% 
+  pivot_longer(-day) %>% 
+  ggplot(aes(x=day, y=value, color = name)) +
+  geom_line() +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=12)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n =12),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "Policy Expectations Measure",
+    y = "%",
+    x = NULL,
+    color = NULL
+  )+
+  theme(legend.position = 'bottom')
+```
+
+Zoom: we can see that current expected fed funds are close to the peak in late 2018... BUT with a different inflation environment (so real rates not as high as 2018).
+
+```{r}
+tibble(day = trading_day, 
+       ed_1y = fut_ed_1y,
+       ed_2y = fut_ed_2y,
+       ed_3y = fut_ed_3y,
+       ed_4y = fut_ed_4y,
+       ed_5y = fut_ed_5y) %>% 
+  left_join(select(new_cash,day,basis_risk, new_basis, fedfunds), by = 'day') %>% 
+  mutate(
+    exp_1y_ff = ed_1y + beta_1y*(ed_4y - ed_5y) - new_basis,
+    exp_2y_ff = ed_2y + beta_2y*(ed_4y - ed_5y) - new_basis,
+    exp_3y_ff = ed_3y + beta_3y*(ed_4y - ed_5y) - new_basis
+    ) %>% 
+  select(day, exp_2y_ff, exp_1y_ff, fedfunds, ed_1y) %>% 
+  pivot_longer(-day) %>% 
+  filter(day >= "2018-08-01") %>%
+  ggplot(aes(x=day, y=value, color = name)) +
+  geom_line() +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=12),
+    labels = scales::label_date_short()
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n =12),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "Policy Expectations Measure",
+    y = "%",
+    x = NULL,
+    color = NULL
+  )+
+  theme(legend.position = 'bottom')
+```
+
+Expected policy rate under time-varying and constant risk premia.
+
+```{r}
+
+get_beta <- function(p, ltable = loadings_table) {
+splinefun(ltable$q, ltable$beta, 'natural')(p)
+}
+
+# using only eurodollar 
+ed_mod %>%
+    filter(
+      day %in% as_date(c("2021-10-15", "2022-03-29", "2019-07-15", "2018-09-17"))
+      ) %>%
+  mutate(type = 'ed') %>% 
+  select(-name, -value) %>% 
+  left_join(select(new_cash,day, new_basis), by = 'day') %>% 
+  mutate(
+    day_type = paste(type, day, sep="-"),
+    q = duration / duration(3, 'month'),
+    beta_q = map_dbl(q, get_beta),
+    ed_4y  = map_dbl(day, rate_curve_fit, 1461,    ed_mod),
+    ed_5y  = map_dbl(day, rate_curve_fit, 1826.25, ed_mod),
+    premia = map2_dbl(q, type, spread_fit, recent_spread_table),
+    eff_c  = rate - premia,
+    eff_v  = rate + beta_q*(ed_4y - ed_5y) - new_basis
+    ) %>% 
+  select(day, q, eff_c, eff_v, day_type, type) %>% 
+  pivot_longer(c(eff_c, eff_v)) %>% 
+  mutate(name = if_else(name == "eff_c", "Constant term premium", "Time-varying term premium")) %>% 
+  ggplot(
+    aes(x=q, y=value, lty = name, color = as.character(day))) + 
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0) +
+  scale_x_continuous(
+    breaks = scales::breaks_extended(n = 20)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    sec.axis =  dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "Expected policy path",
+    subtitle = "Under constant and variable risk premium",
+    x = "quarters",
+    y = "expected fed funds rate",
+    color = "As of:",
+    lty = "contract"
+  ) +
+  theme(legend.position = 'bottom') +
+  coord_cartesian(xlim = c(0, 20), ylim = c(-0.5, NA), expand = FALSE)
+
+
+```
+
+### Deviation from long-run level
+
+Another alternative is to consider a long position of one unit of $fut_t^{ed}(2y)$ and $\beta^{ed}(4y)-\beta^{ed}(2y)$ units of $fut_t^{ed}(5y)$ and a short position of $1 + \beta^{ed}(4y)-\beta^{ed}(2y)$ units of $fut_t^{ed}(4y)$. The value of this portfolio is:
+
+$$
+fut_t^{ed}(2y)-\left(1+\beta^{ed}(4y) - \beta^{ed}(2y)\right).fut_t^{ed}(4y) + \left(\beta^{ed}(4y) - \beta^{ed}(2y)\right).fut_t^{ed}(5y) = \\
+fut_t^{ed}(2y) - fut_t^{ed}(4y) + \beta^{ed}(2y)(fut_t^{ed}(4y) - fut_t^{ed}(5y)) -\beta^{ed}(4y)(fut_t^{ed}(4y)-fut_t^{ed}(5y) = \\
+fut_t^{ed}(2y) - fut_t^{ed}(4y) - \beta^{ed}(2y).s_t + \beta^{ed}(4y).s_t = \\
+fut_t^{ed}(2y) - fut_t^{ed}(4y) - \rho_t^{ed}(2y) + \rho_t^{ed}(4y) = \\
+fut_t^{ed}(2y) - \rho_t^{ed}(2y) - (fut_t^{ed}(4y)-\rho_t^{ed}(4y)) = \\
+E_t\left[\bar{ff}(2y)\right] + c_t - (ff_t^* - c_t) = \\
+E_t\left[\bar{ff}(2y)\right] - ff_t^*
+$$
+
+In words, the value of this portfolio is the expected deviation of fed funds rate from its long-run level, or a measure of the stance of monetary policy.
+
+```{r}
+tibble(day = trading_day, 
+       ed_1y = fut_ed_1y,
+       ed_2y = fut_ed_2y,
+       ed_3y = fut_ed_3y,
+       ed_4y = fut_ed_4y,
+       ed_5y = fut_ed_5y) %>% 
+  mutate(
+    dev_1y_ff = ed_1y + (beta_4y - beta_1y)*ed_5y -(1+beta_4y-beta_1y)*ed_4y,
+    dev_2y_ff = ed_2y + (beta_4y - beta_2y)*ed_5y -(1+beta_4y-beta_2y)*ed_4y,
+    dev_3y_ff = ed_3y + (beta_4y - beta_3y)*ed_5y -(1+beta_4y-beta_3y)*ed_4y
+    ) %>% 
+  select(day, dev_1y_ff, dev_2y_ff, dev_3y_ff) %>% 
+  pivot_longer(-day) %>% 
+  ggplot(aes(x=day, y=value, color = name)) +
+  geom_line() +
+  geom_hline(yintercept = 0, lty = 'dashed') + 
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=12)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n =12),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "Policy Expectations Measure (deviation from long-run)",
+    y = "%",
+    x = NULL,
+    color = NULL
+  )+
+  theme(legend.position = 'bottom')
+```
+
+Zoom:
+
+```{r}
+tibble(day = trading_day, 
+       ed_1y = fut_ed_1y,
+       ed_2y = fut_ed_2y,
+       ed_3y = fut_ed_3y,
+       ed_4y = fut_ed_4y,
+       ed_5y = fut_ed_5y) %>% 
+  mutate(
+    dev_1y_ff = ed_1y + (beta_4y - beta_1y)*ed_5y -(1+beta_4y-beta_1y)*ed_4y,
+    dev_2y_ff = ed_2y + (beta_4y - beta_2y)*ed_5y -(1+beta_4y-beta_2y)*ed_4y,
+    dev_3y_ff = ed_3y + (beta_4y - beta_3y)*ed_5y -(1+beta_4y-beta_3y)*ed_4y
+    ) %>% 
+  select(day, dev_1y_ff, dev_2y_ff, dev_3y_ff) %>% 
+  pivot_longer(-day) %>% 
+  filter(day >= "2018-08-01") %>%
+  ggplot(aes(x=day, y=value, color = name)) +
+  geom_line() +
+  geom_hline(yintercept = 0, lty = 'dashed') + 
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=12),
+    labels = scales::label_date_short()
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n =12),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "Policy Expectations Measure (deviation from long-run)",
+    y = "%",
+    x = NULL,
+    color = NULL
+  )+
+  theme(legend.position = 'bottom')
+```
+
+## Miscellaneous
+
+```{r}
+tibble(day = trading_day, 
+       ed_1y = fut_ed_1y,
+       ed_2y = fut_ed_2y,
+       ed_3y = fut_ed_3y,
+       ed_4y = fut_ed_4y,
+       ed_5y = fut_ed_5y) %>% 
+  pivot_longer(-day) %>% 
+#  filter(day >= "2018-08-01") %>%
+  ggplot(aes(x=day, y=value, color = name)) +
+  geom_line() +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=12),
+    labels = scales::label_date_short()
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n =12),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "Eurodollar futures",
+    y = "%",
+    x = NULL,
+    color = NULL
+  )+
+  theme(legend.position = 'bottom')
+```
