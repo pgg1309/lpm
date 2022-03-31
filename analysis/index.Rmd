@@ -12,7 +12,7 @@ Welcome to my research website.
 
 Latest posts:
 
-* 2022-03-29: [Us Monetary Policy Path](monetary-policy-path.Rmd)
+* 2022-03-29: [US Monetary Policy Path](monetary-policy-path.html)
 * 2022-02-22: [US Conf Board Consumer Confidence](2022-02-22-us-confboard.html)
 * 2022-02-18: [US Financial Wealth](us-financial-wealth.html)
 * 2022-02-15: [US Empire Manufacturing](202201-us-empire-manuf.html)
