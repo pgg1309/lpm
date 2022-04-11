@@ -12,6 +12,7 @@ Welcome to my research website.
 
 Latest posts:
 
+* 2022-04-10: [SPX Earnings](sandp-earnings.html)
 * 2022-03-29: [US Monetary Policy Path](monetary-policy-path.html)
 * 2022-02-22: [US Conf Board Consumer Confidence](2022-02-22-us-confboard.html)
 * 2022-02-18: [US Financial Wealth](us-financial-wealth.html)

@@ -1,0 +1,909 @@
+---
+title: "sandp-earnings"
+author: "pgg1309"
+date: "2022-04-07"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 9
+)
+```
+
+
+
+# Introduction
+
+```{r}
+library(fpp3)
+library(DatastreamDSWS2R)
+
+### Global variables
+update.data <- FALSE
+
+### Functions
+get_data <-
+  function(instrument,
+           type,
+           sdate = "1985-01-01",
+           edate = Sys.Date(),
+           freq = "D",
+           update = FALSE) {
+    if (update) {
+      mydsws <- dsws$new()
+      mydsws$chunkLimit <- 50L
+      xx <- mydsws$timeSeriesRequest(
+        instrument = instrument,
+        datatype = type,
+        startDate = sdate,
+        endDate = edate,
+        frequency = freq
+      )
+      xx <- tibble(index = as.Date(zoo::index(xx)),
+                        value = as.vector(xx),
+      )
+      fname  <- paste0(stringr::str_extract_all(instrument, "[:alnum:]")[[1]], collapse = "")
+      fname2 <- paste0(stringr::str_extract_all(type, "[:alnum:]")[[1]], collapse = "") 
+      saveRDS(xx, paste0("data/sandp-earnings/", fname, "-", fname2, ".rds"))
+      return(xx)
+    } else {
+      fname  <- paste0(stringr::str_extract_all(instrument, "[:alnum:]")[[1]], collapse = "")
+      fname2 <- paste0(stringr::str_extract_all(type, "[:alnum:]")[[1]], collapse = "") 
+      xx <- readRDS(paste0("data/sandp-earnings/", fname, "-", fname2, ".rds"))
+      return(xx)
+    }
+  }
+
+
+daily2month <- function(db) {
+  db %>% 
+    mutate(m = yearmonth(index)) %>%
+    group_by(m) %>%
+    summarize(value = mean(value, na.rm = TRUE),
+              nobs = n(), .groups = "drop") %>%
+    select(index = m, value, nobs)
+  
+}
+
+### Loads data
+
+
+## Daily
+eps_ttm <- get_data("@:USSP500", "A12TE", update = update.data)
+spx_div <- get_data("S&PCOMP", "IDV", update = update.data)
+spx_price <- get_data("@:USSP500", "APRICE", update = update.data)
+eps_ftm <- get_data("@:USSP500", "A12FE", update = update.data)
+sales_ttm <- get_data("@:USSP500", "AS12TS", update = update.data)
+sales_ftm <- get_data("@:USSP500", "AS12FS", update = update.data)
+us10y_real <- get_data("TRUSI10", "RY", update = update.data) %>% drop_na()
+
+## Last 12 month avg, Quarterly
+gdp_nominal <- get_data('USGDP...B', 'X', freq = 'Q', update = update.data)
+gdp_nominal <- gdp_nominal %>% 
+  mutate(index = yearquarter(index),
+         value = slider::slide_dbl(value, mean, .before = 3, .complete = TRUE)) 
+  
+gross_output <- get_data('USGOALLIB', 'X', freq = 'Q', update = update.data)
+gross_output <- gross_output %>% 
+  mutate(index = yearquarter(index),
+         value = slider::slide_dbl(value, mean, .before = 3, .complete = TRUE)) 
+
+# convert quarterly to monthly
+xx <- tempdisagg::td(
+  ts(gdp_nominal$value, start = c(1985, 1), freq = 4)  ~ 1,
+  conversion = 'mean',
+  to = "monthly", method =  "chow-lin-maxlog")
+
+gdp_monthly <- tsbox::ts_tbl(predict(xx)) %>% 
+  transmute(index = yearmonth(time), value)
+
+
+
+# select Thu (weekly data)
+spx <- bind_rows(
+  list(eps = eps_ttm,
+       div = spx_div,
+       price = spx_price,
+       epsf = eps_ftm,
+       sps = sales_ttm,
+       spsf = sales_ftm),
+  .id = 'key') %>% 
+  pivot_wider(names_from = key, values_from = value) %>% 
+  arrange(index) %>% 
+  filter(wday(index) == 5)
+
+
+```
+
+## Total earnings
+
+The chart below plots total S&P earnings since 1985 in nominal USD. 
+
+```{r fig.width=9, message=FALSE, warning=FALSE}
+spx %>% 
+  transmute(index, earnings = eps * div) %>% 
+  drop_na(earnings) %>% 
+  as_tsibble() %>% 
+  model(
+    lm = TSLM(log(earnings) ~ trend())
+  ) %>% 
+  augment() %>% 
+  ggplot(aes(x=index, y=earnings)) + 
+  geom_line(size = 1) +
+  geom_line(aes(y = .fitted), color = 'blue') +
+  geom_line(aes(y = exp(log(.fitted) + 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  geom_line(aes(y = exp(log(.fitted) - 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    labels = scales::label_dollar(scale = 1e-6, accuracy = 1),
+    breaks = scales::breaks_extended(n = 12),
+    trans = 'log',
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  
+  labs(
+    title = "S&P Earnings",
+    subtitle = "Trailing 12-months, 2std dev band",
+    x = NULL,
+    y = 'billion'
+  )
+```
+
+## Earnings vs GDP
+```{r fig.width=9}
+bind_rows(eps = eps_ttm, div = spx_div, .id = 'key') %>% 
+  pivot_wider(names_from = 'key') %>% 
+  transmute(index, value = eps * div) %>% 
+  drop_na() %>%  
+  daily2month() %>% 
+  left_join(gdp_monthly, by = 'index', suffix = c('.earnings', '.gdp')) %>% 
+  mutate(earnings_share = value.earnings * 10^(-6) / value.gdp) %>% 
+  drop_na(earnings_share) %>% 
+  as_tsibble() %>% 
+  model(
+    lm = TSLM(earnings_share ~ trend())
+  ) %>% 
+  augment() %>% 
+  ggplot(aes(x = as_date(index), y = earnings_share)) +
+  geom_line(size = 1) +
+  geom_line(aes(y = .fitted), color = 'blue') +
+  geom_line(aes(y = .fitted + 2*sd(.innov)), color = 'blue', lty = 'dashed') +
+  geom_line(aes(y = .fitted - 2*sd(.innov)), color = 'blue', lty = 'dashed') +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_width(0.005),
+    labels = scales::label_percent(accuracy = 0.1),
+    sec.axis = dup_axis()
+  ) +
+  labs(
+    title = "S&P 500 Earnings",
+    subtitle = 'as a share of GDP',
+    x = NULL,
+    y = NULL
+  ) +
+  coord_cartesian(ylim = c(0, NA))
+
+```
+
+
+
+
+## Total sales
+
+```{r fig.width=9}
+spx %>%
+  transmute(index, sales = sps * div) %>% 
+  drop_na(sales) %>% 
+  as_tsibble() %>% 
+  model(lm = TSLM(log(sales) ~trend())) %>% 
+  augment() %>% 
+  ggplot(aes(x=index, y=sales)) + 
+  geom_line(size = 1) +
+  geom_line(aes(y = .fitted), color = 'blue') +
+  geom_line(aes(y = exp(log(.fitted) + 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  geom_line(aes(y = exp(log(.fitted) - 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    labels = scales::label_dollar(scale = 1e-6, accuracy = 1),
+    breaks = scales::breaks_extended(n = 12),
+    trans = 'log',
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  
+  labs(
+    title = "S&P Sales",
+    subtitle = "Trailing 12-months, std dev band",
+    x = NULL,
+    y = 'billion'
+  )
+```
+
+
+## Sales vs GDP
+```{r fig.width=9}
+bind_rows(sps = sales_ttm, div = spx_div, .id = 'key') %>% 
+  pivot_wider(names_from = 'key', values_from = value) %>%
+  transmute(index, value = sps * div) %>% 
+  drop_na() %>% 
+  daily2month() %>% 
+  left_join(gdp_monthly, by = 'index', suffix = c('.sales', '.gdp')) %>% 
+  mutate(sales_share = value.sales * 10^(-6) / value.gdp) %>% 
+  drop_na(sales_share) %>% 
+  as_tsibble() %>% 
+  model(lm = TSLM(sales_share ~trend())) %>% 
+  augment() %>% 
+  ggplot(aes(x = as_date(index), y = sales_share)) +
+  geom_line(size = 1) +
+  geom_line(aes(y = .fitted), color = 'blue') +
+  geom_line(aes(y = .fitted + 2*sd(.innov)), color = 'blue', lty = 'dashed') +
+  geom_line(aes(y = .fitted - 2*sd(.innov)), color = 'blue', lty = 'dashed') +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_width(0.025),
+    labels = scales::label_percent(accuracy = 1)
+  ) +
+  labs(
+    title = "S&P 500 Sales",
+    subtitle = 'as a share of GDP, 2std dev band',
+    x = NULL,
+    y = NULL
+  ) +
+  coord_cartesian(ylim = c(0.35, NA))
+
+```
+
+
+
+## Margin
+
+```{r fig.width=9}
+bind_rows(sps = sales_ttm, eps = eps_ttm, .id = 'key') %>% 
+  pivot_wider(names_from = 'key', values_from = value) %>%
+  transmute(index, value = eps / sps) %>% 
+  drop_na() %>% 
+  daily2month() %>% 
+  as_tsibble() %>% 
+  model(lm = TSLM(value ~ trend())) %>% 
+  augment() %>% 
+  ggplot(aes(x = as_date(index), y = value)) + 
+  geom_line(size = 1) + 
+  geom_line(aes(y = .fitted), color = 'blue') +
+  geom_line(aes(y = .fitted + 2*sd(.innov)), color = 'blue', lty = 'dashed') +
+  geom_line(aes(y = .fitted - 2*sd(.innov)), color = 'blue', lty = 'dashed') +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 1),
+    breaks = scales::breaks_extended(n = 12),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  
+  labs(
+    title = "S&P Margin",
+    subtitle = "Earnings last 12m / sales last 12m, 2std dev band",
+    x = NULL,
+    y = NULL
+  ) +
+  coord_cartesian(ylim = c(0, NA))
+```
+
+# Model
+
+## Earnings growth
+
+
+```{r fig.width=9}
+bind_rows(
+eps  = daily2month(eps_ttm) %>% select(-nobs),
+epsf = daily2month(eps_ftm) %>% select(-nobs),
+.id = 'key') %>%
+  pivot_wider(names_from = 'key') %>% 
+  left_join(gdp_monthly, by = 'index') %>%
+  mutate(earnings_growth = epsf / eps -1,
+         past_growth = (eps / lag(eps,12))^(1/1) - 1,
+         gdp_growth = value / lag(value,12) -1) %>% 
+  select(index, past_growth, earnings_growth) %>% 
+  pivot_longer(-index) %>% 
+  ggplot(aes(x=as_date(index), y=value, color = name)) + 
+  geom_line(size = 1) + 
+  geom_smooth(method = MASS::rlm, formula = y ~ x, se = FALSE, size = 0.7, lty = 'dashed') +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 0.1),
+    breaks = scales::breaks_extended(n = 15),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "S&P Earnings Growth",
+    subtitle = "expected growth one year ahead vs growth in past 12m",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme(legend.position = 'bottom')
+```
+
+
+## Earnings next year always up
+
+The chart below shows that forecast earnings are almost always higher than observed earnings in the last 12 months. 
+
+```{r fig.width=9}
+bind_rows(
+eps  = daily2month(eps_ttm) %>% select(-nobs),
+epsf = daily2month(eps_ftm) %>% select(-nobs),
+.id = 'key') %>%
+  pivot_wider(names_from = 'key') %>% 
+  as_tsibble() %>% 
+  model(lm = TSLM(log(epsf) ~ log(eps))) %>% 
+  augment() %>% 
+  add_column(eps = daily2month(eps_ttm) %>% pull(value)) %>% 
+  ggplot(aes(x=(eps), y=(epsf))) + 
+  geom_point() + 
+  geom_abline(intercept = 0, slope = 1) +
+  geom_line(aes(y = .fitted), color = 'blue', size = 1) +
+  geom_line(aes(y = exp(log(.fitted) + 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  geom_line(aes(y = exp(log(.fitted) - 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+
+  scale_x_continuous(
+    breaks = scales::breaks_extended(n=15),
+    trans = 'log'
+    ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 15),
+    trans = 'log',
+    sec.axis = dup_axis(name = NULL)
+    ) +
+  labs(
+    title = "S&P Earnings",
+    subtitle = "expected earnings one year ahead - always up",
+    x = "EPS last 12 months",
+    y = "EPS next 12 months"
+  ) 
+```
+
+
+## Drawdown
+
+
+```{r fig.width=9}
+bind_rows(eps = eps_ttm, epsf = eps_ftm, div = spx_div, .id = 'key') %>% 
+  pivot_wider(names_from = 'key') %>% 
+  mutate(earnings = eps * div,
+         fwdearnings = epsf * div) %>% 
+  drop_na(earnings) %>% 
+  mutate(
+    max_earnings = cummax(earnings),
+    gap_earnings = earnings / max_earnings - 1,
+    max_fwdearnings = cummax(fwdearnings),
+    gap_fwdearnings = fwdearnings / max_fwdearnings - 1
+    ) %>% 
+  ggplot(aes(x=index, y=gap_earnings)) + 
+  geom_line() + 
+  geom_area(alpha = 0.2, fill = 'red') + 
+  geom_line(aes(x=index, y=gap_fwdearnings), color = 'blue')+
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 0.1),
+    breaks = scales::breaks_extended(n = 15),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "S&P Earnings Drawdown",
+    subtitle = "trailing 12m earnings (fwd earnings in blue)",
+    x = NULL,
+    y = '% from previous high'
+  ) + 
+  coord_cartesian(ylim = c(NA,0), expand = FALSE)
+```
+
+
+```{r fig.width=9}
+spx_price %>%  
+  drop_na() %>% 
+  mutate(max_price = cummax(value),
+         gap_price = value / max_price - 1) %>% 
+  ggplot(aes(x=index, y=gap_price)) + 
+  geom_line() + 
+  geom_area(alpha = 0.2, fill = 'red') + 
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 0.1),
+    breaks = scales::breaks_extended(n = 15),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "S&P Drawdown",
+    subtitle = "price index",
+    x = NULL,
+    y = '% from previous high'
+  ) + 
+  coord_cartesian(ylim = c(NA,0), expand = FALSE)
+```
+
+
+
+```{r}
+# PE chart
+bind_rows(eps = eps_ttm, price = spx_price, .id = 'key') %>% 
+  pivot_wider(names_from = 'key') %>% 
+  drop_na() %>% 
+  mutate(pe = price / eps) %>% 
+  as_tsibble() %>% 
+  model(lm = TSLM(log(pe) ~trend())) %>% 
+  augment() %>% 
+  ggplot(aes(x=index, y=pe)) + 
+  geom_line(size = 1) +
+  geom_line(aes(y = .fitted), color = 'blue') +
+  geom_line(aes(y = exp(log(.fitted) + 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  geom_line(aes(y = exp(log(.fitted) - 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    trans = 'log',
+    sec.axis = dup_axis(name = NULL)
+  ) +
+
+  labs(
+    title = "S&P Price / Earnings ratio",
+    subtitle = "Trailing 12-months, 2std dev band",
+    x = NULL,
+    y = NULL
+  )
+
+
+  
+
+
+```
+
+
+```{r}
+# PE fowd chart
+bind_rows(eps = eps_ftm, price = spx_price, .id = 'key') %>% 
+  pivot_wider(names_from = 'key') %>% 
+  drop_na() %>% 
+  mutate(pe = price / eps) %>% 
+  as_tsibble() %>% 
+  model(lm = TSLM(log(pe) ~trend())) %>% 
+  augment() %>% 
+  ggplot(aes(x=index, y=pe)) + 
+  geom_line(size = 1) +
+  geom_line(aes(y = .fitted), color = 'blue') +
+  geom_line(aes(y = exp(log(.fitted) + 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  geom_line(aes(y = exp(log(.fitted) - 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    trans = 'log',
+    sec.axis = dup_axis(name = NULL)
+  ) +
+
+  labs(
+    title = "S&P Price / Earnings ratio",
+    subtitle = "Next 12-months, 2std dev band",
+    x = NULL,
+    y = NULL
+  )
+
+```
+
+
+
+Forward PE is always a bit below trailing PE -- which is another way of saying that expected earnings in the next 12 months are always above trailing 12 months earnings. 
+
+```{r fig.width=8}
+bind_rows(
+  `trailing earnings` = eps_ttm,
+  `forward earnings`  = eps_ftm, .id = 'key')  %>% 
+  drop_na() %>% 
+  left_join(spx_price, by = 'index') %>% 
+  mutate(pe = value.y / value.x) %>% 
+  ggplot(aes(x=index, y=pe, color = key)) + 
+  geom_line(size = 1) +
+  geom_smooth(method = MASS::rlm, formula = y ~ x, se = FALSE, lty = 'dashed') +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    trans = 'log',
+    sec.axis = dup_axis(name = NULL)
+  ) +
+
+  labs(
+    title = "S&P Price / Earnings ratio",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme(legend.position = 'bottom')
+
+
+```
+
+
+
+## Model for future earnings
+
+### Nominal GDP
+
+```{r message=FALSE, warning=FALSE}
+gdp_nominal %>% 
+  mutate(yoy = value / lag(value,4) - 1) %>% 
+  drop_na() %>% 
+  ggplot(aes(x = as_date(index), y = yoy)) +
+  geom_line(size = 1) +
+  geom_smooth(se = FALSE) +
+  scale_x_date(
+    breaks = scales::breaks_pretty(n = 12)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 15),
+    labels = scales::label_percent(accuracy = 0.1),
+    sec.axis = dup_axis()
+  ) +
+  labs(
+    title = "US Nominal GDP growth",
+    x = NULL,
+    y = NULL
+  )
+  
+```
+
+```{r}
+# gdp_nominal %>% as_tsibble(index = index) %>% 
+#   drop_na() %>% 
+#   #rolling 20 years
+#   slide_tsibble(.size = 20*4) %>% 
+#   model(
+#     #aan  =  ETS(log(value) ~ error("A") + trend("A") + season("N")),
+#     #aadn =  ETS(log(value) ~ error("A") + trend("Ad") + season("N")),
+#     #man  =  ETS(log(value) ~ error("M") + trend("A") + season("N")),
+#     #madn =  ETS(log(value) ~ error("M") + trend("Ad") + season("N")),
+#     ets =  ETS(log(value)),
+#     arima = ARIMA(log(value))
+#   ) -> fit
+# 
+# fc <- fit %>%
+#   forecast(h = '2 years')
+# 
+# fc %>% accuracy(gdp_nominal %>% as_tsibble() %>% 
+#   drop_na())
+# 
+# fc %>% 
+#   accuracy(
+#     gdp_nominal %>% as_tsibble(),
+#     measures = list(interval_accuracy_measures, distribution_accuracy_measures)
+#   )
+# 
+# fc %>% 
+#   accuracy(
+#     gdp_nominal %>% as_tsibble(),
+#     list(skill = skill_score(CRPS))
+#   )
+
+# Best model ends up being aan
+gdp_nominal %>% as_tsibble(index = index) %>% 
+  drop_na() %>% 
+  filter_index("2005 Q1" ~ "2019 Q4") %>%
+  model(
+    aan  =  ETS(log(value)) # ~ error("A") + trend("A") + season("N"))
+  ) -> fit
+
+fc <- fit %>%
+  forecast(h = '4 years')
+
+
+fc %>%
+  autoplot(gdp_nominal %>% as_tsibble(index = index) %>% drop_na() %>% filter_index("2000 Q1" ~.)) +
+  geom_line(aes(y = .fitted), col="#D55E00",
+            data = augment(fit)) +
+  labs(y="$ billion", title="US GDP nominal") +
+  guides(colour = "none") +
+  scale_y_continuous(
+    labels = scales::label_dollar(accuracy = 1),
+    trans = 'log',
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis(name = NULL)
+  )
+
+
+
+# fit %>%
+#   generate(h = 8, times = 5,
+#            bootstrap_block_size = 8) %>%
+#   autoplot(.sim) +
+#   autolayer(gdp_nominal %>% as_tsibble() %>% drop_na() %>% filter_index("2010 Q1" ~.), value) +
+#   guides(colour = "none") +
+#   scale_y_continuous(
+#     labels = scales::label_dollar(accuracy = 1),
+#     trans = 'log',
+#     breaks = scales::breaks_extended(n = 10)
+#   )
+
+
+```
+The table below shows the implied nominal growth in GDP for the 80% forecast range.
+
+```{r}
+last_gdp <- gdp_nominal %>% drop_na() %>% tail(1) %>% pull(value)
+
+hilo(fc, 80) %>% tail(1) %>% 
+  mutate(p10 = (quantile(value, p = 0.1) / last_gdp - 1)*100,
+         p90 = (quantile(value, p = 0.9) / last_gdp - 1)*100,
+         .mean = (.mean / last_gdp - 1)*100) %>%
+  select(index, p10, .mean, p90)
+
+```
+
+### Sales to GDP
+
+```{r}
+db_sales <- bind_rows(sps = sales_ttm, div = spx_div, .id = 'key') %>% 
+  pivot_wider(names_from = 'key', values_from = value) %>%
+  transmute(index, value = sps * div) %>% 
+  drop_na() %>% 
+  daily2month() %>% 
+  left_join(gdp_monthly, by = 'index', suffix = c('.sales', '.gdp')) %>% 
+  mutate(sales_share = value.sales * 10^(-6) / value.gdp) %>% 
+  drop_na(sales_share) %>% 
+  as_tsibble(index = index) %>% 
+  drop_na() 
+
+
+# db_sales %>% 
+#    #rolling 20 years
+#    slide_tsibble(.size = 20*4) %>% 
+#    model(
+#      aan  =  ETS(sales_share ~ error("A") + trend("A") + season("N")),
+#      aadn =  ETS(sales_share ~ error("A") + trend("Ad") + season("N")),
+#      man  =  ETS(sales_share ~ error("M") + trend("A") + season("N")),
+#      madn =  ETS(sales_share ~ error("M") + trend("Ad") + season("N")),
+#      ets =  ETS(sales_share),
+#      arima = ARIMA(sales_share)
+#    ) -> fit_sales
+  
+  
+# fc_sales <- fit_sales %>%
+#   forecast(h = '2 years')
+# 
+# fc_sales %>% accuracy(db_sales) %>% arrange(MAPE)
+  
+# BEst model is AADn
+db_sales %>% 
+  filter_index("2005 Q1" ~ "2019 Q4") %>%
+  model(
+    aadn  =  ETS(sales_share ~ error("A") + trend("Ad") + season("N"))
+  ) -> fit_sales
+
+fc_sales <- fit_sales %>%
+  forecast(h = '4 years')
+
+
+fc_sales %>% 
+  autoplot(db_sales %>% filter_index("2000 Q1" ~.)) +
+  geom_line(aes(y = .fitted), col="#D55E00",
+            data = augment(fit_sales)) +
+  labs(title="Sales to GDP ratio") +
+  guides(colour = "none") +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 0.1),
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis(name = NULL)
+  )
+
+
+
+
+
+  #model(lm = TSLM(sales_share ~trend()))
+```
+
+```{r}
+hilo(fc_sales, 80) %>% tail(1) %>% 
+  mutate(p20 = quantile(sales_share, p = 0.2),
+         p80 = quantile(sales_share, p = 0.8)) %>%
+  select(index, p20, .mean, p80)
+```
+
+### Margin
+
+```{r}
+db_margin <- bind_rows(sps = sales_ttm, eps = eps_ttm, .id = 'key') %>% 
+  pivot_wider(names_from = 'key', values_from = value) %>%
+  transmute(index, value = eps / sps) %>% 
+  drop_na() %>% 
+  daily2month() %>% 
+  as_tsibble(index = index) 
+
+ # db_margin %>%
+ #    #rolling 20 years
+ #    slide_tsibble(.size = 20*4) %>%
+ #    model(
+ #      aan  =  ETS(value ~ error("A") + trend("A") + season("N")),
+ #      aadn =  ETS(value ~ error("A") + trend("Ad") + season("N")),
+ #      man  =  ETS(value ~ error("M") + trend("A") + season("N")),
+ #      madn =  ETS(value ~ error("M") + trend("Ad") + season("N")),
+ #      ets =  ETS(value),
+ #      arima = ARIMA(value)
+ #    ) -> fit_margin
+ # 
+ # 
+ # fc_margin <- fit_margin %>%
+ #   forecast(h = '2 years')
+ # 
+ # fc_margin %>% accuracy(db_margin) %>% arrange(MAPE)
+
+#AAdn eh o melhor
+db_margin %>% 
+  filter_index("2005 Q1" ~ "2019 Q4") %>%
+  model(
+    aadn  =  ETS(value ~ error("A") + trend("Ad") + season("N"))
+  ) -> fit_margin
+
+fc_margin <- fit_margin %>%
+  forecast(h = '4 years')
+
+
+fc_margin %>% 
+  autoplot(db_margin %>% filter_index("2000 Q1" ~.)) +
+  geom_line(aes(y = .fitted), col="#D55E00",
+            data = augment(fit_margin)) +
+  labs(title="S&P Margin") +
+  guides(colour = "none") +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 0.1),
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis(name = NULL)
+  )
+
+
+
+```
+
+```{r}
+hilo(fc_margin, 80) %>% tail(1) %>% 
+  mutate(p20 = quantile(value, p = 0.2),
+         p80 = quantile(value, p = 0.8)) %>%
+  select(index, p20, .mean, p80)
+
+```
+
+### PE
+
+```{r}
+db_pe <- bind_rows(eps = eps_ftm, price = spx_price, .id = 'key') %>% 
+  pivot_wider(names_from = 'key') %>% 
+  drop_na() %>% 
+  transmute(index, value = price / eps) %>% 
+  daily2month() %>%
+  as_tsibble(index = index) 
+
+
+ # db_pe %>%
+ #    #rolling 20 years
+ #    slide_tsibble(.size = 20*4) %>%
+ #    model(
+ #      aan  =  ETS(value ~ error("A") + trend("A") + season("N")),
+ #      aadn =  ETS(value ~ error("A") + trend("Ad") + season("N")),
+ #      man  =  ETS(value ~ error("M") + trend("A") + season("N")),
+ #      madn =  ETS(value ~ error("M") + trend("Ad") + season("N")),
+ #      ets =  ETS(value),
+ #      arima = ARIMA(value)
+ #    ) -> fit_pe
+ # 
+ # 
+ # fc_pe <- fit_pe %>%
+ #   forecast(h = '2 years')
+ # 
+ # fc_pe %>% accuracy(db_pe) %>% arrange(MAPE)
+ # 
+ #MADN
+
+db_pe %>% 
+  filter_index("2005 Q1" ~ "2019 Q4") %>%
+  model(
+    madn  =  ETS(value ~ error("M") + trend("Ad") + season("N"))
+  ) -> fit_pe
+
+fc_pe <- fit_pe %>%
+  forecast(h = '4 years')
+
+
+fc_pe %>% 
+  autoplot(db_pe %>% filter_index("2000 Q1" ~.)) +
+  geom_line(aes(y = .fitted), col="#D55E00",
+            data = augment(fit_pe)) +
+  labs(title="S&P Fwd PE") +
+  guides(colour = "none") +
+  scale_y_continuous(
+   # labels = scales::label_percent(accuracy = 0.1),
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis(name = NULL)
+  )
+
+
+```
+
+```{r}
+hilo(fc_pe, 80) %>% tail(1) %>% 
+  mutate(p20 = quantile(value, p = 0.2),
+         p80 = quantile(value, p = 0.8)) %>%
+  select(index, p20, .mean, p80)
+```
+
+
+### Assumptions
+
+```{r}
+h_gdp <- hilo(fc, 80) %>% tail(1) %>% 
+  mutate(p10 = quantile(value, p = 0.2),
+         p90 = quantile(value, p = 0.8)) %>%
+  as_tibble() %>%
+  select(p10, .mean, p90) 
+
+h_sales <- hilo(fc_sales, 80) %>% tail(1) %>% 
+  mutate(p20 = quantile(sales_share, p = 0.2),
+         p80 = quantile(sales_share, p = 0.8)) %>%
+  as_tibble() %>%
+  select(p20, .mean, p80)
+
+h_margin <- hilo(fc_margin, 80) %>% tail(1) %>% 
+  mutate(p20 = quantile(value, p = 0.2),
+         p80 = quantile(value, p = 0.8)) %>%
+  as_tibble() %>%
+  select(p20, .mean, p80)
+
+h_pe <- hilo(fc_pe, 80) %>% tail(1) %>% 
+  mutate(p20 = quantile(value, p = 0.2),
+         p80 = quantile(value, p = 0.8)) %>%
+  as_tibble() %>%
+  select(p20, .mean, p80)
+
+
+tibble(gdp = t(h_gdp), sales = t(h_sales), margin = t(h_margin), pe = t(h_pe)) %>%
+  expand(gdp, sales, margin, pe) %>%
+  mutate(earnings = gdp * 10^6 * sales * margin,
+         eps = earnings / 8455447,
+         spx = pe * eps) %>%
+  ggplot(aes(x = spx)) +
+  geom_histogram(aes(y=..density..), colour="black", fill="white", bins = 15)+
+ geom_density(alpha=.2, fill="#FF6666") 
+  
+```
+
+```{r paged.print=TRUE}
+tibble(gdp = t(h_gdp), sales = t(h_sales), margin = t(h_margin), pe = t(h_pe)) %>%
+  expand(gdp, sales, margin, pe) %>%
+  mutate(earnings = gdp * 10^6 * sales * margin,
+         eps = earnings / 8455447,
+         spx = pe * eps) %>% arrange(desc(eps)) %>%
+  select(-earnings)
+```
+
