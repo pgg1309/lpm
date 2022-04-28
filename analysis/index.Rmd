@@ -12,6 +12,9 @@ Welcome to my research website.
 
 Latest posts:
 
+* 2022-04-26: [US Conf Board Consumer Confidence](2022-04-26-us-confboard.html)
+* 2022-04-25: [SPX weekly return vs Fed reserves](fed-reserves-sandp.html)
+* 2022-04-11: [Goods elasticity](goods-elasticity.html)
 * 2022-04-10: [SPX Earnings](sandp-earnings.html)
 * 2022-03-29: [US Monetary Policy Path](monetary-policy-path.html)
 * 2022-02-22: [US Conf Board Consumer Confidence](2022-02-22-us-confboard.html)

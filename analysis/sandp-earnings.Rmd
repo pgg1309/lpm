@@ -907,3 +907,39 @@ tibble(gdp = t(h_gdp), sales = t(h_sales), margin = t(h_margin), pe = t(h_pe)) %
   select(-earnings)
 ```
 
+## PE vs real rates
+
+```{r}
+db_realrate <- bind_rows(eps = eps_ftm, price = spx_price, .id = 'key') %>% 
+  pivot_wider(names_from = 'key') %>% 
+  drop_na() %>% 
+  transmute(index, value = price / eps) %>% 
+  left_join(us10y_real, by = 'index', suffix = c('.pe', '.real10y')) %>% 
+  drop_na() %>% 
+  rename(pe = value.pe, real10y = value.real10y) %>% 
+  as_tsibble(index = index)
+
+
+db_realrate %>% 
+  filter_index("2012-01-01" ~ .) %>% 
+  #mutate(regime = if_else(index >= "2012-01-01", 1, 0)) %>% 
+  model(
+    lm = TSLM(pe ~ real10y)
+  ) -> fit_rr
+  
+report(fit_rr)  
+
+augment(fit_rr) %>%
+  ggplot(aes(x = index)) +
+  geom_line(aes(y = pe, colour = "Data")) +
+  geom_line(aes(y = .fitted, colour = "Fitted")) +
+  labs(y = NULL,
+    title = "SPX P/E next 12 months"
+  ) +
+  scale_colour_manual(values=c(Data="black",Fitted="#D55E00")) +
+  guides(colour = guide_legend(title = NULL))
+
+fit_rr %>% gg_tsresiduals()
+
+```
+

@@ -1,0 +1,999 @@
+---
+title: "US Elasticity Estimates"
+author: "Dr. Paulo Gustavo Grahl, CFA"
+date: "2022-04-11"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 9
+)
+
+options(knitr.kable.NA = '')
+```
+
+```{r startup, include=FALSE}
+library(fpp3)
+library(DatastreamDSWS2R)
+library(micEconAids)
+library(miscTools)
+
+### Global variables
+update.data <- FALSE
+
+### Functions
+get_data <-
+  function(instrument,
+           type,
+           sdate = "1985-01-01",
+           edate = Sys.Date(),
+           freq = "D",
+           update = FALSE) {
+    fname  <- paste0(stringr::str_extract_all(instrument, "[:alnum:]")[[1]], collapse = "")
+    fname2 <- paste0(stringr::str_extract_all(type, "[:alnum:]")[[1]], collapse = "") 
+    
+    # If file does not exist, force update/download
+    if (!file.exists(paste0("data/goods-elasticity/", fname, "-", fname2, ".rds"))) update <- TRUE
+    
+    if (update) {
+      mydsws <- dsws$new()
+      mydsws$chunkLimit <- 50L
+      xx <- mydsws$timeSeriesRequest(
+        instrument = instrument,
+        datatype = type,
+        startDate = sdate,
+        endDate = edate,
+        frequency = freq
+      )
+      xx <- tibble(index = as.Date(zoo::index(xx)),
+                        value = as.vector(xx),
+      )
+      saveRDS(xx, paste0("data/goods-elasticity/", fname, "-", fname2, ".rds"))
+      return(xx)
+    } else {
+      xx <- readRDS(paste0("data/goods-elasticity/", fname, "-", fname2, ".rds"))
+      return(xx)
+    }
+  }
+
+# print 
+myprint.aidsElas <- function( x, ... ) {
+
+   cat( "\nDemand Elasticities " )
+
+   if( x$priceIndex == "TL" ) {
+      pxName <- "translog"
+   } else if( x$priceIndex %in% c( "S", "SL" ) ) {
+      pxName <- "Stone"
+   } else if( x$priceIndex == "P" ) {
+      pxName <- "Paasche"
+   } else if( x$priceIndex %in% c( "L", "Ls" ) ) {
+      pxName <- "Laspeyres"
+   } else if( x$priceIndex == "T" ) {
+      pxName <- "Tornqvist"
+   } else {
+      pxName <- "unknown"
+   }
+
+   if( x$method %in% c( "GA", "B1" ) ) {
+      methodName <- "formulas of Green and Alston / Buse (first set)"
+   } else if( x$method %in% c( "B2" ) ) {
+      methodName <- "formulas of Buse (second set)"
+   } else if( x$method %in% c( "Go", "Ch" ) ) {
+      methodName <- "formulas of Goddard / Chalfant"
+   } else if( x$method == "EU" ) {
+      methodName <- "formulas of Eales and Unnevehr"
+   } else if( x$method == "AIDS" ) {
+      methodName <- "original AIDS formulas"
+   } else {
+      methodName <- paste( "unknown formula '", x$method, "'", sep = "" )
+   }
+
+   if( x$method %in% c( "AIDS", "EU" ) ) {
+      cat( "(", methodName, ")\n", sep = "" )
+   } else {
+      cat( "(", methodName, " for ", pxName, " price index)\n", sep = "" )
+   }
+
+   cat( "Expenditure Elasticities\n" )
+   kableExtra::kbl(x$exp, digits = 2, col.names = "elasticity") %>% 
+     kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left"
+    
+    ) %>%
+     print()
+   
+   cat( "\nMarshallian (uncompensated) Price Elasticities\n" )
+   kableExtra::kbl(x$marshall, digits = 2) %>% 
+        kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left"
+    
+    ) %>%
+     print()
+   
+   cat( "\nHicksian (compensated) Price Elasticities\n" )
+   kableExtra::kbl(x$hicks, digits = 2) %>% 
+        kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left"
+    
+    ) %>%
+     print()
+   invisible( x )
+}
+
+myprint.aidsEst <- function( x, ... ) {
+   cat( "<BR>Demand analysis with the Almost Ideal " )
+   cat( "Demand System (AIDS)<br>" )
+   cat( "Estimation Method: " )
+   cat( my.aidsEstMethod( x$method, x$priceIndex ) )
+   cat( "Coefficients:<br>" )
+   #myprint.coef.aidsEst( coef( x ) )
+   
+   if( !is.null( coef(x)$alpha0 ) ){
+      cat( "alpha_0<br>" )
+      cat( coef(x)$alpha0, "<br>" )
+   }
+   cat( "alpha\n" )
+   kableExtra::kbl(coef(x)$alpha, digits = 4, col.names = "alpha") %>% 
+     kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left"
+    
+    ) %>%
+     print()
+   
+   cat( "beta<br>" )
+   kableExtra::kbl(coef(x)$beta, digits = 4, col.names = "beta") %>% 
+     kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left"
+    
+    ) %>%
+     print()
+   
+   cat( "gamma<br>" )
+   kableExtra::kbl(coef(x)$gamma, digits = 4) %>% 
+     kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left"
+    
+    ) %>%
+     print()
+   
+   if( !is.null( coef(x)$delta ) ){
+      cat( "delta<br>" )
+      print( coef(x)$delta )
+   }
+   invisible( x )
+}
+
+my.aidsEstMethod <- function( method, priceIndex ) {
+
+   if( priceIndex == "S" ) {
+      result <- "Stone Index"
+   } else if( priceIndex == "SL" ) {
+      result <- "lagged Stone Index"
+   } else if( priceIndex == "P" ) {
+      result <- "Paasche Index"
+   } else if( priceIndex == "L" ) {
+      result <- "Laspeyres Index"
+   } else if( priceIndex == "Ls" ) {
+      result <- "simplified Laspeyres Index"
+   } else if( priceIndex == "T" ) {
+      result <- "Tornqvist Index"
+   } else {
+      result <- "unknown price index"
+   }
+   if( substr( method, 1, 2 ) == "LA" ) {
+      result <- paste( "Linear Approximation (LA) with ",
+         result, " (", priceIndex, ")\n", sep = "" )
+   } else if( substr( method, 1, 2 ) %in% c( "MK", "IL" ) ) {
+      result <- paste( "'Iterated Linear Least Squares Estimator' (IL)\n",
+         "(starting with ", result, ", ", priceIndex, ")\n", sep = "" )
+   } else {
+      result <- paste( "unknown method with ", result, " (",
+         priceIndex, ")\n", sep = "" )
+   }
+
+   return( result )
+}
+```
+
+```{r load_data, include=FALSE}
+# Nominal data 
+consumption <- get_data('USNV6ZDW', 'X', freq = 'Y', update = update.data)
+durables    <- get_data('USNPI87N', 'X', freq = 'Y', update = update.data)
+nondurables <- get_data('USN63VRN', 'X', freq = 'Y', update = update.data)
+food        <- get_data('USNVKKB7', 'X', freq = 'Y', update = update.data)
+gasoline    <- get_data('USNUL6YL', 'X', freq = 'Y', update = update.data)
+services    <- get_data('USN5OT60', 'X', freq = 'Y', update = update.data)
+
+consumption_data <- bind_rows(
+  consumption = consumption,
+  durables = durables,
+  nondurables = nondurables,
+  food = food,
+  gasoline = gasoline,
+  services = services,
+  .id = 'key'
+) %>% 
+  pivot_wider(names_from = 'key', values_from = 'value') %>% 
+  drop_na()
+
+
+# Price data
+p_consumption <- get_data('USN71NHK', 'X', freq = 'Y', update = update.data)
+p_durables    <- get_data('USN179NB', 'X', freq = 'Y', update = update.data)
+p_nondurables <- get_data('USN5LCXL', 'X', freq = 'Y', update = update.data)
+p_food        <- get_data('USNRZKRB', 'X', freq = 'Y', update = update.data)
+p_gasoline    <- get_data('USNNW9G2', 'X', freq = 'Y', update = update.data)
+p_services    <- get_data('USNTU5GK', 'X', freq = 'Y', update = update.data)
+
+price_data <- bind_rows(
+  consumption = p_consumption,
+  durables = p_durables,
+  nondurables = p_nondurables,
+  food = p_food,
+  gasoline = p_gasoline,
+  services = p_services,
+  .id = 'key'
+) %>% 
+  pivot_wider(names_from = 'key', values_from = 'value') %>% 
+  drop_na() %>% 
+  # normaliza preços para ter média 1 entre 1985 e 2019
+  mutate(across(-starts_with('index'), ~ .x / mean(.x[1:35])))
+
+share_data <- bind_rows(
+  consumption = consumption,
+  durables = durables,
+  nondurables = nondurables,
+  food = food,
+  gasoline = gasoline,
+  services = services,
+  .id = 'key'
+) %>% 
+  pivot_wider(names_from = 'key', values_from = 'value') %>% 
+  mutate(
+    durables = durables / consumption,
+    nondurables = nondurables / consumption,
+    food = food / consumption,
+    gasoline = gasoline / consumption,
+    services = services / consumption) %>% 
+  drop_na()
+
+
+# Merge share and price
+# calculate price for nondurable ex food and gasoline
+# using laspeyres
+# output prices and share data
+# for the most detailed breakdown
+
+
+db <- full_join(share_data, price_data, by = 'index', suffix = c('.share', '.price')) %>%
+  mutate(
+    corenondurable.share = nondurables.share - food.share - gasoline.share,
+    nondurables.change = log(nondurables.price / lag(nondurables.price)),
+    food.change = log(food.price / lag(food.price)),
+    gasoline.change = log(gasoline.price / lag(gasoline.price)),
+    corenondurable.change = nondurables.change 
+    - lag(food.share)/lag(nondurables.share)*food.change
+    - lag(gasoline.share)/lag(nondurables.share)*gasoline.change,
+    corenondurable.price = if_else(is.na(corenondurable.change), 0 , corenondurable.change),
+    corenondurable.price = cumsum(corenondurable.price),
+    corenondurable.price = exp(corenondurable.price),
+    # normaliza para preço = 1 de 1985 a 2019
+    corenondurable.price = corenondurable.price/mean(corenondurable.price[1:35])
+    ) %>%
+  transmute(
+    year = year(index),
+    durables.price,
+    food.price,
+    gasoline.price,
+    corenondurable.price,
+    services.price,
+    durables.share,
+    food.share,
+    gasoline.share,
+    corenondurable.share,
+    services.share,
+    expenditure = consumption.share) 
+
+rm(consumption, consumption_data, durables, food, gasoline, nondurables, p_consumption, p_durables, p_food, p_gasoline, p_nondurables, p_services, price_data, services, share_data)
+
+
+```
+
+## Introdução ao sistema de demanda
+
+A ideia desta nota é tentar avaliar se o aumento no consumo de bens nos Estados Unidos no período pós-Covid reflete de fato o aumento de renda (efeito positivo) e o aumento de preços (efeito negativo), e tentar avaliar o que pode acontecer em 2022 e 2023.
+
+Para isso o objetivo é estimar elasticidade preço e renda da demanda por bens.
+
+Pesquisei rapidamente a literatura, e aparentemente o melhor ferramental utilizado em micro para estimar elasticidades (income e price elasticity) ainda é baseado no paper *An almost ideal demand system* publicado em 1980 pelo Angus Deaton (que ganhou o Nobel de economia em 2015). O modelo proposto por Deaton (AIDS) é uma paroximação de primeira ordem de qualquer sistema de demanda genérico, satisfaz o [axioma da escolha](https://www.oxfordreference.com/view/10.1093/oi/authority.20110803095437703) e resolve o problema da agregação, ou seja, as propriedades dos agregados refletem as propriedades esperadas do agente maximizador de utilidade. Com isso a demanda agregada pode ser considerada como se fosse o resultado das decisões racionais de um agente (consumidor) representativo.
+
+O ponto de partida é representar as preferências via uma *função de custo*, que é obtida minimizando o gasto necessário para atingir um certo nível de utilidade.
+
+$$
+\ln m_t = \ln c(p_t, U_t) = \alpha_0 + \sum_i \alpha_i \ln p_{it} + \frac{1}{2}\sum_i \sum_j \gamma^*_{ij} \ln p_{it} \ln p_{jt} + U_t \beta_0 \prod_i p_{it}^{\beta_i}
+$$ Onde $m_t$ é o gasto total, $P_{it}$ é o preço do bem $i$ no período $t$, $U_t$ é o nível de utilidade.
+
+As derivadas parciais da função custo em relação a preços são as funções de [demanda (hicksiana):](https://en.wikipedia.org/wiki/Hicksian_demand_function)
+
+$$
+x_{it}(p_t, m_t) = \frac{\partial m_t}{\partial p_i} = \frac{m_t}{p_i} \left(\alpha_i + \frac{1}{2}\sum_j \left( \gamma^*_{ij} + \gamma^*_{ji}\right) \ln p_{jt} + \beta_i U_t\beta_0 \prod_k p_{kt}^{\beta_k} \right) 
+$$
+
+Mas o gasto total $\sum_i p_ix_{it}$ é equivalente a $m_t$ e reescrevendo $U_t$ em função de $p_t$ e $x_t$ (utilidade indireta) obtem-se:
+
+$$
+x_{it}(p_t, m_t) = \frac{\partial m_t}{\partial p_i} = \frac{m_t}{p_i} \left(\alpha_i + \sum_j \gamma_{ij}  \ln p_{jt} + \beta_i \ln\left(\frac{m_t}{P_t}\right) \right) 
+$$
+
+onde $P_t$ é dado por:
+
+$$
+\ln P_t = \alpha_0 + \sum_i \alpha_i \ln p_{it} + \frac{1}{2} \sum_i \sum_j \gamma_{ij} \ln p_{it} \ln p_{jt}
+$$ e $\gamma_{ij} = \frac{1}{2}\left(\gamma^*_{ij} + \gamma^*_{ji} \right)$.
+
+A equação de demanda pode ser simplificada considerand a participação de cada bem no gasto total:
+
+$$
+s_{it} = \frac{p_{it} . x_{it}(p_t, m_t)}{m_t} = \alpha_i + \sum_j \gamma_{ij} \ln p_{jt} + \beta_i \ln(m_t/P_t)
+$$
+
+Algumas restrições derivadas da maximização de utilidade do consumidor (agente representativo) impõem restrições nos coeficientes estimados. Em particular, a soma das participações tem que ser igual a 1, $\sum_i s_{it} = 1$. Esta condição é garantida se:
+
+$$
+\sum_i \alpha_i = 1; \qquad \sum_i \beta_i = 0; \qquad \sum_i \gamma_{ij} = 0 \quad \forall j
+$$
+
+A condição para não haver 'ilusão monetária' (se todos os preços e renda aumentarem na mesma proporção) é garantida por:
+
+$$
+\sum_j \gamma_{ij} = 0 \quad \forall i
+$$
+
+E por fim simetria da demanda hickisiana (compensada) é garantida por $\gamma_{ij} = \gamma_{ji} \quad \forall i,j$. As propriedades *aditividade*, *homogeneidade*, *negatividade de demanda compensada* e *simetria* são condições necessárias e suficientes para que o sistema de demanda tenha sido gerado por um consumidor que maximiza utilidade.
+
+## Dados e estimação
+
+A estimação é feita com dados anuais, desde 1985, e as categorias de consumo foram divididas em: duráveis, não duráveis e serviços. Não duráveis, por sua vez, foram subdivididos em: alimentos, gasolina e outros.
+
+O gráfico abaixo mostra a participação de cada uma destas categorias no total de consumo. Serviços constituem a maior parte, seguido por duráves e outros não duráveis.
+
+```{r echo=FALSE}
+db %>% 
+  select(year, durables.share, food.share, gasoline.share, corenondurable.share, services.share) %>% 
+  pivot_longer(-year) %>% 
+  mutate(name = stringr::str_remove(name, ".share")) %>%
+  ggplot(aes(x = year, y = value, color = name)) +
+  geom_line(size = 1) +
+  geom_smooth(method = 'lm', se = FALSE, lty = 'dashed', formula = y ~ x) +
+  scale_x_continuous(
+    breaks = seq(1985, 2021, 2)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_pretty(n = 15),
+    labels = scales::label_percent(),
+    sec.axis = dup_axis()
+  ) +
+  labs(
+    title = "Householding spending",
+    subtitle = "As a % of total consumption",
+    color = NULL,
+    x = NULL,
+    y = NULL
+  ) +
+  theme(legend.position = 'bottom') +
+  coord_cartesian(xlim = c(1985, 2021), ylim = c(0, 0.7), expand = FALSE)
+  
+```
+
+Os gráficos abaixo mostram a evolução dos preços destas categorias. Fica claro o longo período de deflação em durables interrompido em 2021, bem como a aceleração na inflação de alimentos nos últimos dois anos.
+
+```{r}
+db %>% 
+  select(year, durables.price, food.price, gasoline.price, corenondurable.price, services.price) %>% 
+  pivot_longer(-year) %>% 
+  mutate(name = stringr::str_remove(name, ".price")) %>%
+  ggplot(aes(x = year, y = value, color = name)) +
+  geom_line(size = 1) +
+  #geom_smooth(method = 'lm', se = FALSE, lty = 'dashed', formula = y ~ x) +
+  scale_x_continuous(
+    breaks = seq(1985, 2021, 2)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_pretty(n = 15),
+    sec.axis = dup_axis(),
+    trans = 'log'
+  ) +
+  labs(
+    title = "Price level of consumption categories",
+    subtitle = "index, period average = 1",
+    color = NULL,
+    x = NULL,
+    y = NULL
+  ) +
+  theme(legend.position = 'bottom') +
+  coord_cartesian(xlim = c(1985, 2021), expand = FALSE)
+
+```
+
+```{r}
+db %>% 
+  select(year, durables.price, food.price, corenondurable.price, services.price) %>% 
+  mutate(across(ends_with(".price"), ~ .x / lag(.x) -1)) %>% 
+  pivot_longer(-year) %>% 
+  mutate(name = stringr::str_remove(name, ".price")) %>%
+  ggplot(aes(x = year, y = value, fill = name)) +
+  geom_bar(stat = 'identity', position=position_dodge()) +
+  #geom_smooth(method = 'lm', se = FALSE, lty = 'dashed', formula = y ~ x) +
+  scale_x_continuous(
+    breaks = seq(1986, 2022, 2)
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_pretty(n = 15),
+    sec.axis = dup_axis(),
+    labels = scales::label_percent(accuracy = 0.1)
+  ) +
+  labs(
+    title = "Price increase of consumption categories",
+    subtitle = "% change",
+    fill = NULL,
+    x = NULL,
+    y = NULL
+  ) +
+  theme(legend.position = 'bottom') +
+  coord_cartesian(xlim = c(1985, 2022), expand = FALSE)
+
+```
+
+A estimação do sistema de demanda composto pelas categorias acima é feita substituindo a participação determinística no consumo $s_{it}$ pela participação observada $w_{it}$. A estimação é feita usando métodos não lineares devido ao índice de preços $P_t$.
+
+$$
+w_{it} = \alpha_i + \sum_j \gamma_{ij} \ln p_{jt} + \beta_i \ln(m_t/P_t) + u_{it}
+$$
+
+## Estimando as elasticidades
+
+A amostra utilizada para estimação abaixo foi 1985 a 2019. Abaixo os coeficientes estimados:
+
+```{r, results='asis'}
+db.test <- data.frame(db[1:35,])
+db.train <- data.frame(db[36:37,])
+
+price.names <- c("services.price", "durables.price", "corenondurable.price", "food.price", "gasoline.price" )
+share.names <- c("services.share", "durables.share", "corenondurable.share", "food.share", "gasoline.share")
+
+# Iterative estimation
+aids.result <- aidsEst(
+  price.names,
+  share.names,
+  "expenditure",
+  data = db.test,
+  method = "IL",
+  priceIndex = "T", 
+  hom = TRUE, # força homogeneidade
+  sym = TRUE, # força simetria
+  ILmaxiter = 500)
+
+myprint.aidsEst(aids.result)
+#summary(aids.result)
+
+```
+
+### Aditividade, homogeneidade e simetria
+
+Aditividade:
+
+```{r echo=TRUE}
+sum(coef(aids.result)$alpha)
+```
+
+```{r echo=TRUE}
+sum(coef(aids.result)$beta)
+```
+
+```{r echo=TRUE, paged.print=TRUE}
+colSums(coef(aids.result)$gamma)
+
+```
+
+Homogeneidade:
+
+```{r echo=TRUE, paged.print=TRUE}
+rowSums(coef(aids.result)$gamma) 
+```
+
+Simetria:
+
+```{r echo=TRUE}
+isSymmetric(coef(aids.result)$gamma, tol = 1e-10, check.attributes = FALSE)
+```
+
+Monotonicidade (negatividade de demanda compensada):
+
+```{r echo=TRUE}
+aidsMono(price.names, "expenditure", coef = coef(aids.result), data = db.test)
+```
+
+Ou seja, o sistema estimado satisfaz as condições necessárias e suficientes para que tenha sido gerado por um agente representativo maximizador de utilidade.
+
+## Elasticidades
+
+As definições das elasticidades estão abaixo. A elesticidade renda (gasto) é dada por:
+
+$$
+\eta_i = \frac{\partial x_i}{\partial m} \frac{m}{x_i}
+$$
+
+Marshallian (uncompensated) price elasticity:
+
+$$
+\Theta_{ij} = \frac{\partial x_i}{\partial p_j} \frac{p_j}{x_i}
+$$
+
+Hicksian (compensated) price elasticity:
+
+$$
+\Theta^*_{ij} = \Theta_{ij} + \eta_i * s_j
+$$
+
+Abaixo as eleasticidades estimadas a preço e quantidade de 2019.
+
+```{r results='asis'}
+pMeans <- colMeans(db.test[35, price.names])
+wMeans <- colMeans(db.test[35, share.names])
+aids.elas <- aidsElas(coef(aids.result), pMeans, wMeans, coefCov = vcov(aids.result), df = df.residual(aids.result))
+
+myprint.aidsElas(aids.elas)
+```
+
+E a tabela abaixo mostra quais elasticidades são estatisticamente diferentes de zero:
+
+```{r}
+kableExtra::kbl(summary(aids.elas)$table[summary(aids.elas)$table[,4] <= 0.1,], digits = 2) %>% 
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+### Elasticidades - comentários
+
+Elasticidade renda de todos as categorias é positiva (*bem normal*) exceto alimentos, cuja elasticidade renda é pequena (estatisticamente igual a zero). Bens duráveis e 'core' não duráveis são *bens de luxo* (elasticidade \> 1), enquanto que serviços e gasolina podem ser considerados *bens normais*.
+
+A tabela abaixo mostra a elasticidade renda:
+
+```{r}
+renda <- aids.elas$exp
+renda[aids.elas$expPval > 0.1] <- NA
+kableExtra::kbl(renda, digits = 2, col.names = "income elasticity") %>% 
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+Nenhum dos bens analisados é *bem de Giffen*, ou seja, a demanda sempre cai com aumento do próprio preço. Desta vez gasoline é a exceção, com elasticidade preço zero.
+
+Elasticidade preço para serviços (-0.7), duráveis (-0.3) e core não duráveis (-0.4) são maiores que -1, considerados *inelásticos a preço*. Alimentos (-1.2) são *elásticos a preço*. E gasolina tem elasticidade estatisticamente igual a zero (+0.1).
+
+A tabela abaixo mostra a elasticidade preço (próprio):
+
+```{r}
+preco <- diag(aids.elas$marshall)
+preco[diag(aids.elas$marshallPval) > 0.1] <- NA
+names(preco) <- rownames(aids.elas$marshall)
+kableExtra::kbl(preco, digits = 2, col.names = "price elasticity") %>% 
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+Para determinar se os bens são complementares ou substitutos o correto é olhar a demanda compensada (hicksian). A tabela abaixo contem as elasticidades preço da demanda compensada (itens estatisticamente zero estão com NA).
+
+Mas os resultados obtidos são um pouco controversos. O sistema estimado implica que serviços é complementar a duráveis e alimentos. Implica também que alimentos e duráveis são bens complementares, e que gasolina e core não duráveis são complementares. Não parece fazer muito sentido.
+
+```{r}
+hicks <- aids.elas$hicks
+hicks[aids.elas$hicksPval > 0.10] <- NA
+diag(hicks) <- NA
+kableExtra::kbl(hicks, digits = 2) %>% 
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+## Projeções
+
+A tabela abaixo mostra o crescimento do gasto desde a Covid. Queda em 2020 seguida por um substancial aumento em 2021 por conta da renda disponível pelos estímulos.
+
+```{r}
+select(db, year, expenditure) %>% 
+  mutate(growth = expenditure / lag(expenditure) -1) %>% 
+  tail(5) %>%
+  kableExtra::kbl(digits = 4) %>% 
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+Abaixo, vemos a variação de preços (inflação) das categorias:
+
+```{r}
+select(db, year, ends_with('.price')) %>% 
+  mutate(across(ends_with('.price'), ~ round((.x / lag(.x) - 1)*100,1))) %>% 
+  tail(5) %>%
+  kableExtra::kbl() %>% 
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+Destaque para os preços de duráveis que aumentaram mais de 6% em 2021 e para o preço da gasolina, com queda grande em 2020 seguida por forte aumento em 2021. Alimentos também sairam um pouco do 'padrão' subindo mais de 3% em cada um dos últimos dois anos.
+
+***Duráveis**:* considerando a elasticidade renda e eleasticidade preço estimadas, a quantidade consumida de duráveis deveria ter caído aproximadamente `r round(-2.64*1.58-0.29*(-0.8),1)`% em 2020 e subido `r round(12.1*1.58-0.29*6.3,1)` em 2021. Os valores observados estão na tabela abaixo.
+
+```{r}
+select(db, year, expenditure, durables.share, durables.price) %>% 
+  mutate(q_durables = expenditure*durables.share / durables.price,
+         q_durables = q_durables / lag(q_durables) - 1) %>%
+  select(year, q_durables) %>% 
+  tail(5) %>%
+  kableExtra::kbl(digits = 4) %>% 
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+***Serviços***: já para serviços, as eleasticidades estimadas sugerem queda de `r  round(-2.64*0.97-0.75*(2.1),1)`% em 2020 e aumento de `r  round(12.1*0.97-0.75*3.3,1)`% em 2021. A tabela abaixo contem os valores observados. Em ambos os anos pós covid, a quantidade de serviços consumida ficou abaixo da projetada pelas elasticidades, provavelmente reflexo das restrições a mobilidade impostas pela pandemia.
+
+```{r}
+select(db, year, expenditure, services.share, services.price) %>% 
+  mutate(q_services = expenditure*services.share / services.price,
+         q_services = q_services / lag(q_services) - 1) %>%
+  select(year, q_services) %>% 
+  tail(5) %>%
+  kableExtra::kbl(digits = 4) %>% 
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+Porém, essa hipótese de restrição a mobilidade pode ser contestada se olharmos o resíduo do modelo de demanda para serviços. O gráfico abaixo deixa claro que, mesmo antes da Covid, a demanda por serviços estava sendo superestimada pelo modelo.
+
+```{r}
+tibble(year = 1985:2019, 
+       services_resid = aids.result$wResid[,'wResid1'] * db.test$expenditure) %>% 
+  ggplot(aes(x = year, y = services_resid)) + 
+  geom_line(size = 1) + 
+  geom_point() +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n =12)
+  ) +
+  scale_x_continuous(
+    breaks = scales::breaks_width(2)
+  ) + 
+  labs(
+    title = "Residuals of services estimate",
+    x = NULL,
+    y = "$ bn"
+  )
+```
+
+Olhando agora os resíduos do modelo para a demanda por duráveis, notamos que houve uma consistente subestimação da demanda nos últimos anos.
+
+```{r}
+tibble(year = 1985:2019, 
+       durables_resid = aids.result$wResid[,'wResid2'] * db.test$expenditure) %>% 
+  ggplot(aes(x = year, y = durables_resid)) + 
+  geom_line(size = 1) + 
+  geom_point() +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n =12)
+  ) +
+  scale_x_continuous(
+    breaks = scales::breaks_width(2)
+  ) + 
+  labs(
+    title = "Residuals of durables estimate",
+    x = NULL,
+    y = "$ bn"
+  )
+```
+
+### Projeções completas
+
+O exercício anterior foi uma tentativa aproximada de quantificar a demanda por duráveis e serviços, uma vez que não levou em conta outros preços na economia.
+
+A tabela abaixo projeta o crescimento de quantidade esperado para os anos de 2020 e 2021 com base no modelo estimado de 1985 a 2019.
+
+```{r}
+scenario.covid <- aidsCalc(price.names, "expenditure", coef(aids.result), rbind(db.test[32:35,1:12], db.train))
+
+
+q_fcast <- scenario.covid$quant
+names(q_fcast) <- paste0("q_", stringr::str_replace(price.names, ".price", ""))
+
+q_fcast <- tibble(year = 2016:2021, q_fcast) %>% 
+  mutate(across(-year, ~ (.x / lag(.x) - 1)*100 )) %>% 
+  drop_na() 
+
+#print(q_fcast)
+q_fcast %>% kableExtra::kbl(format.args = list(digits = 2)) %>%
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+E abaixo os valores de fato observados nestes anos:
+
+```{r}
+q_actual <- db %>%
+  transmute(year, 
+    q_services = expenditure*services.share / services.price,
+    q_durables = expenditure*durables.share / durables.price,
+    q_corenondurables = expenditure*corenondurable.share / corenondurable.price,
+    q_food = expenditure*food.share / food.price,
+    q_gasoline = expenditure*gasoline.share / gasoline.price,
+    
+    q_services = (q_services / lag(q_services) - 1)*100,
+    q_durables = (q_durables / lag(q_durables) - 1)*100,
+    q_corenondurables = (q_corenondurables / lag(q_corenondurables) - 1)*100,
+    q_food = (q_food / lag(q_food) - 1)*100,
+    q_gasoline = (q_gasoline / lag(q_gasoline) - 1)*100,
+    ) %>% 
+  tail(5)
+
+
+#print(q_actual)
+kableExtra::kbl(q_actual, format.args = list(digits = 2)) %>%
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+Abaixo o residuo, a diferença entre as quantidades observadas e a projetada pelo sistema de demanda.
+
+```{r}
+(q_actual - q_fcast) %>% 
+  mutate(year = 2017:2021) %>%
+  data.frame() %>%
+  kableExtra::kbl(format.args = list(digits = 2)) %>%
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left"
+    
+    )
+
+```
+
+Posso fazer a mesma conta com os valores monetários ao invés de quantidade, usando o valor total de gasto realmente observado. Valores abaixo em USD bn.
+
+```{r}
+s_fcast <- scenario.covid$shares
+names(s_fcast) <- paste0("s_", stringr::str_replace(price.names, ".price", ""))
+
+s_fcast <- tibble(year = 2016:2021, s_fcast)
+
+s_actual <- select(db, year, services.share, durables.share, corenondurable.share, food.share, gasoline.share) %>% 
+  filter(year >= 2016) %>% 
+  rename(s_services = services.share,
+         s_durables = durables.share,
+         s_conrenondurable = corenondurable.share,
+         s_food = food.share,
+         s_gasoline = gasoline.share)
+
+s_resid <- round(((s_actual - s_fcast) * db$expenditure[32:37]) %>% 
+  mutate(year = 2016:2021),0)
+
+kableExtra::kbl(s_resid) %>%
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+
+```
+
+## Estimando elasticidades (incluindo Covid)
+
+Abaixo as elasticidades estimadas considerando o período todo de 1985 a 2021.
+
+```{r}
+# Iterative estimation
+aids.result.full <- aidsEst(
+  price.names,
+  share.names,
+  "expenditure",
+  data = data.frame(db),
+  method = "IL",
+  priceIndex = "T", 
+  hom = TRUE, # força homogeneidade
+  sym = TRUE, # força simetria
+  ILmaxiter = 500)
+```
+
+### Aditividade, homogeneidade e simetria (incluindo Covid)
+
+Aditividade:
+
+```{r echo=TRUE}
+sum(coef(aids.result.full)$alpha)
+```
+
+```{r echo=TRUE}
+sum(coef(aids.result.full)$beta)
+```
+
+```{r echo=TRUE, paged.print=TRUE}
+colSums(coef(aids.result.full)$gamma)
+
+```
+
+Homogeneidade:
+
+```{r echo=TRUE, paged.print=TRUE}
+rowSums(coef(aids.result.full)$gamma) 
+```
+
+Simetria:
+
+```{r echo=TRUE}
+isSymmetric(coef(aids.result.full)$gamma, tol = 1e-10, check.attributes = FALSE)
+```
+
+Monotonicidade (negatividade de demanda compensada):
+
+```{r echo=TRUE}
+aidsMono(price.names, "expenditure", coef = coef(aids.result.full), data = data.frame(db))
+```
+
+Ou seja, o sistema estimado satisfaz as condições necessárias e suficientes para que tenha sido gerado por um agente representativo maximizador de utilidade.
+
+Abaixo as eleasticidades estimadas a preço e quantidade de 2021.
+
+```{r results='asis'}
+pMeans21 <- colMeans(data.frame(db)[37, price.names])
+wMeans21 <- colMeans(data.frame(db)[37, share.names])
+aids.elas.full <- aidsElas(coef(aids.result.full), pMeans21, wMeans21, coefCov = vcov(aids.result.full), df = df.residual(aids.result.full))
+
+myprint.aidsElas(aids.elas.full)
+```
+
+E a tabela abaixo mostra quais elasticidades são estatisticamente diferentes de zero:
+
+```{r}
+kableExtra::kbl(summary(aids.elas.full)$table[summary(aids.elas.full)$table[,4] <= 0.1,], digits = 2) %>% 
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+## Cenário para 2022
+
+Para pensar no cenário de 2022 temos que fazer hipóteses sobre (a) aumento do gasto total e (b) variação de preços.
+
+```{r echo=TRUE}
+db.future <- db %>%
+  add_case(
+    year = 2022,
+    durables.price       = tail(., 1)$durables.price      * 1,
+    food.price           = tail(.,1)$food.price           * 1.035,
+    gasoline.price       = tail(.,1)$gasoline.price       * 1,
+    corenondurable.price = tail(.,1)$corenondurable.price * 1.01,
+    services.price       = tail(.,1)$services.price       * 1.04,
+    expenditure          = tail(.,1)$expenditure          * 1.1
+  )
+```
+
+A tabela abaixo inclui a *projeção* para 2022 com base nas hipóteses acima descritas:
+
+```{r}
+scenario.2022 <- aidsCalc(price.names, "expenditure", coef(aids.result.full), data.frame(db.future))
+
+
+q_2022 <- scenario.2022$quant
+names(q_2022) <- paste0("q_", stringr::str_replace(price.names, ".price", ""))
+
+q_2022 <- tibble(year = 1985:2022, q_2022) %>% 
+  mutate(across(-year, ~ (.x / lag(.x) - 1)*100 )) %>% 
+  drop_na() 
+
+tail(q_2022) %>% kableExtra::kbl(format.args = list(digits = 2)) %>%
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+Em termos consolidados, e usando o *share* estimado para cada categoria, podemos inferir qual seria o crescimento real do consumo:
+
+```{r}
+tibble(
+  year = 1986:2022,
+  consumption_growth = rowSums(scenario.2022$shares[-1,] * q_2022[,2:6])
+) %>%
+  tail(5) %>%
+  kableExtra::kbl(format.args = list(digits = 2)) %>%
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+```
+
+O que implicaria, implicitamente, em um caminho para inflação como na tabela abaixo. O *pce* é calculado usando a média aritmética dos pesos de $w_{i,t}$ e $w_{i,t-1}$. 
+
+```{r}
+# completa o db.future com o share estimado
+db.future.est <- db.future
+db.future.est[38, 'services.share']       <-  scenario.2022$shares[38, 'w1']
+db.future.est[38, 'durables.share']       <-  scenario.2022$shares[38, 'w2']
+db.future.est[38, 'corenondurable.share'] <-  scenario.2022$shares[38, 'w3']
+db.future.est[38, 'food.share']           <-  scenario.2022$shares[38, 'w4']
+db.future.est[38, 'gasoline.share']       <-  scenario.2022$shares[38, 'w5']
+
+# estima novamente incluindo o forecast para 2022
+aids.result.est <- aidsEst(
+  price.names,
+  share.names,
+  "expenditure",
+  data = data.frame(db.future.est),
+  method = "IL",
+  priceIndex = "T", 
+  hom = TRUE, # força homogeneidade
+  sym = TRUE, # força simetria
+  ILmaxiter = 500)
+
+
+db.future.est %>%
+  mutate(
+    durables.inf       = durables.price       / lag(durables.price)       - 1,
+    food.inf           = food.price           / lag(food.price)           - 1,
+    gasoline.inf       = gasoline.price       / lag(gasoline.price)       - 1,
+    corenondurable.inf = corenondurable.price / lag(corenondurable.price) - 1,
+    services.inf       = services.price       / lag(services.price)       - 1, 
+    pce = durables.inf       * (lag(durables.share) + durables.share)*0.5 +
+          food.inf           * (lag(food.share) + food.share)*0.5 + 
+          gasoline.inf       * (lag(gasoline.share) + gasoline.share)*0.5 +
+          corenondurable.inf * (lag(corenondurable.share) + corenondurable.share)*0.5 +
+          services.inf       * (lag(services.share) + services.share)*0.5,
+    pce = pce * 100, 
+    P = exp(aids.result.est$lnp), 
+    infla = (P / lag(P) -1)*100
+  ) %>% 
+  select(year, pce, infla) %>%
+  tail(6) %>%
+   kableExtra::kbl(digits = 1) %>%
+  kableExtra::kable_classic(
+    lightable_options = 'striped',
+    full_width = F,
+    position = "left")
+
+```
+

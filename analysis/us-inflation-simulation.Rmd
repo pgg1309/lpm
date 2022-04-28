@@ -1,0 +1,1295 @@
+---
+title: "us-inflation-simulation"
+author: "pgg1309"
+date: "2022-02-14"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  include = TRUE
+)
+require(fpp3)
+```
+
+```{r functions}
+### Functions ----
+add_lags <- function(original, variable_names, lags = c(1, 2)) {
+  for (variable_name in variable_names) {
+    for (lag in lags) {
+      new_variable_name <- paste0("lag", lag, "_", variable_name)
+      new_value <- dplyr::lag(dplyr::pull(original, variable_name), lag)
+      original <- dplyr::mutate(original, !!new_variable_name := new_value)
+    }
+  }
+  return(original)
+}
+
+mygg_tsresiduals <- function(data, type = "innovation", plot_type = "histogram", ...) {
+  if (!fabletools::is_mable(data)) {
+    abort("gg_tsresiduals() must be used with a mable containing only one model.")
+  }
+  data <- stats::residuals(data, type = type)
+  if (n_keys(data) > 1) {
+    abort("gg_tsresiduals() must be used with a mable containing only one model.")
+  }
+  out <- gg_tsdisplay(data, !!sym(".resid"),
+    plot_type = plot_type,
+    ...
+  )
+  out[[1]] <- out[[1]] + ggplot2::ylab(sub("([[:alpha:]])(.+)",
+    "\\U\\1\\L\\2 residuals", type,
+    perl = TRUE
+  ))
+  out
+}
+
+```
+
+```{r loaddata}
+cpiboard <- pins::board_folder("E:/RData")
+cpi <- pins::pin_read(cpiboard, "USCPI")
+fredr::fredr_set_key(options()$fred.key)
+
+# Energy (commodities and services)
+energy <- filter(cpi, series_id == "CUSR0000SA0E") %>%
+  select(month, value) %>%
+  mutate(key = "cpi_energy") %>%
+  update_tsibble(key = "key")
+
+# CPI ex energy
+cpix <- filter(cpi, series_id == "CUSR0000SA0LE") %>%
+  select(month, value) %>% 
+  mutate(key = "cpi_x_energy") %>% 
+  update_tsibble(key = "key")
+
+# Core goods CPI (commodities less food and energy)
+core_goods <- filter(cpi, series_id == "CUSR0000SACL1E") %>% 
+  select(month, value) %>% 
+  mutate(key = "core_goods") %>% 
+  update_tsibble(key = "key")
+
+# Core services CPI (services less energy services)
+core_services <- filter(cpi, series_id == "CUSR0000SASLE") %>% 
+  select(month, value) %>% 
+  mutate(key = "core_services") %>% 
+  update_tsibble(key = 'key')
+
+
+# Function to read from FRED
+get_fred_data <- function(id, keyname) {
+  fredr::fredr(
+    series_id = id,
+    frequency = "d"
+  ) %>%
+    group_by(month = yearmonth(date)) %>%
+    summarize(value = mean(value, na.rm = TRUE)) %>%
+    mutate(key = keyname) %>%
+    tsibble(index = month, key = "key") %>%
+    return()
+}
+
+# Brent and WTI
+wti <- get_fred_data("DCOILWTICO", "wti")
+brent <- get_fred_data("DCOILBRENTEU", "brent")
+
+```
+
+# US CPI - possible scenarios
+
+## Energy CPI
+
+The chart below plots the *z-score* of the CPI energy index, WTI and Brent oil prices. Adjusting for volatility, it is clear that oil prices and the energy CPI index share a similar trend.
+
+```{r energy_chart}
+bind_rows(energy, wti, brent) %>%
+  # limit sample to Jan 1986, start of WTI data
+  # brent sample starts at May 1987
+  filter_index("1986 Jan" ~ .) %>%
+  group_by_key() %>%
+  mutate(value = as.vector(scale(log(value)))) %>%
+  ggplot(aes(x = month, y = value, color = key)) +
+  geom_line(size = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 15),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "Energy CPI index vs. oil price",
+    x = NULL,
+    y = "z-score",
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", panel.border = element_blank())
+```
+
+### A simple model
+
+Despite the clear association between energy CPI and oil prices, a simple model fails to capture the dynamics.
+
+```{r simple_model}
+simple_mod <- bind_rows(energy, wti) %>%
+  pivot_wider(names_from = key, values_from = value) %>%
+  drop_na() %>%
+  model(linear = TSLM(log(cpi_energy) ~ log(wti)))
+
+report(simple_mod)
+```
+
+```{r simple_model_fit}
+augment(simple_mod) %>%
+  ggplot(aes(x = month)) +
+  geom_line(aes(y = cpi_energy, colour = "Data"), size = 1) +
+  geom_line(aes(y = .fitted, colour = "Fitted"), size = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 15),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "CPI Energy index",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", panel.border = element_blank())
+```
+
+```{r simple_model_scatter}
+augment(simple_mod) %>%
+  ggplot(aes(x = cpi_energy, y = .fitted)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  scale_x_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  labs(
+    title = "CPI Energy index",
+    x = "Data (actual values)",
+    y = "Fitted (predicted values)",
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", panel.border = element_blank())
+```
+
+Looking at the *residuals* it is clear that this simple model is misspecified as there is autocorrelation in the residuals.
+
+```{r simple_model_resid}
+simple_mod %>% mygg_tsresiduals(plot_type = 'partial')
+```
+
+
+### Additional models
+
+The residuals of the *simple model* reported in the previous section clearly shows the presence of a *trend* or *drift*. Moreover, even allowing for the presence of a trend the residuals present serial correlation.
+
+Therefore it seems appropriated to model energy cpi considering a trend and assuming an ARMA process for the residuals. 
+
+A *deterministic trend* is represented by
+
+$$ ecpi_t = \beta_0 + \beta_1 wti_t + \beta_2 t + \eta_t$$
+
+where $\eta_t$ is an ARMA process. A *stochastic trend* is represented by
+
+$$ecpi_t = ecpi_{t-1} + \beta_1 wti_t + \beta_2 + \eta_t $$
+
+Additionally, I've tested both models including up to four lags for the $wti_t$ prices.
+
+The table blow shows the different models considered, using data up to December 2019, and sorted by AICc.
+
+```{r models}
+# split data into test and training --------------------------------------------
+full_data <- bind_rows(energy, wti) %>%
+  pivot_wider(names_from = key, values_from = value) %>%
+  drop_na(wti) # keeps wti
+
+train_data <- filter_index(full_data, . ~ "2019 Dec")
+test_data <- filter_index(full_data, "2020 Jan" ~ .)
+
+# Estimate models --------------------------------------------------------------
+table_mod <- train_data %>%
+  model(
+    deterministic = ARIMA(log(cpi_energy) ~ pdq(d = 0) + PDQ(0, 0, 0) +
+      1 + trend() + log(wti),
+    greedy = FALSE, approximation = FALSE
+    ),
+    deterministic_l1 = ARIMA(log(cpi_energy) ~ pdq(d = 0) + PDQ(0, 0, 0) +
+      1 + trend() + log(wti) + lag(log(wti)),
+    greedy = FALSE, approximation = FALSE
+    ),
+    deterministic_l2 = ARIMA(log(cpi_energy) ~ pdq(d = 0) + PDQ(0, 0, 0) +
+      1 + trend() + log(wti) + lag(log(wti)) +
+      lag(log(wti), 2),
+    greedy = FALSE, approximation = FALSE
+    ),
+    deterministic_l3 = ARIMA(log(cpi_energy) ~ pdq(d = 0) + PDQ(0, 0, 0) +
+      1 + trend() + log(wti) + lag(log(wti)) +
+      lag(log(wti), 2) + lag(log(wti), 3),
+    greedy = FALSE, approximation = FALSE
+    ),
+    deterministic_l4 = ARIMA(log(cpi_energy) ~ pdq(d = 0) + PDQ(0, 0, 0) +
+      1 + trend() + log(wti) + lag(log(wti)) +
+      lag(log(wti), 2) + lag(log(wti), 3) +
+      lag(log(wti), 4),
+    greedy = FALSE, approximation = FALSE
+    ),
+    stochastic = ARIMA(log(cpi_energy) ~ pdq(d = 1) + PDQ(0, 0, 0) +
+      1 + log(wti),
+    greedy = FALSE, approximation = FALSE
+    ),
+    stochastic_l1 = ARIMA(log(cpi_energy) ~ pdq(d = 1) + PDQ(0, 0, 0) +
+      1 + log(wti) + lag(log(wti)),
+    greedy = FALSE, approximation = FALSE
+    ),
+    stochastic_l2 = ARIMA(log(cpi_energy) ~ pdq(d = 1) + PDQ(0, 0, 0) +
+      1 + log(wti) + lag(log(wti)) + lag(log(wti), 2),
+    greedy = FALSE, approximation = FALSE
+    ),
+    stochastic_l3 = ARIMA(log(cpi_energy) ~ pdq(d = 1) + PDQ(0, 0, 0) +
+      1 + log(wti) + lag(log(wti)) + lag(log(wti), 2) +
+      lag(log(wti), 3),
+    greedy = FALSE, approximation = FALSE
+    ),
+    stochastic_l4 = ARIMA(log(cpi_energy) ~ pdq(d = 1) + PDQ(0, 0, 0) +
+      1 + log(wti) + lag(log(wti)) + lag(log(wti), 2) +
+      lag(log(wti), 3) + lag(log(wti), 4),
+    greedy = FALSE, approximation = FALSE
+    )
+  )
+
+glance(table_mod) %>% arrange(AICc) 
+
+
+
+
+# select(table_mod, deterministic_l1) %>%
+#   forecast(test_data) %>%
+#   tail()
+# autoplot(filter_index(full_data, "2010 Jan" ~ .))
+# 
+# select(table_mod, stochastic_l1, deterministic_l1) %>%
+#   forecast(test_data) %>%
+#   autoplot(filter_index(full_data, "2010 Jan" ~ .))
+# 
+# 
+# 
+# 
+
+
+```
+
+Looking at the AICc information criteria the best model includes a deterministic trend, one lag of $wti$, and ARMA(1,3) errors. The BIC criteria suggest a stochastic trend model with one lag of $wti$ and MA(3) errors. 
+
+Both models are printed below:
+
+```{r selected_models}
+table_mod %>%
+  select(deterministic_l1) %>%
+  report()
+
+table_mod %>%
+  select(stochastic_l1) %>%
+  report()
+
+```
+
+And the model's fitted values are similar and close to the actual observed values.
+
+```{r}
+table_mod %>%
+  select(deterministic_l1, stochastic_l1) %>%
+  refit(new_data = full_data) %>% 
+  augment() %>% 
+  ggplot(aes(x = cpi_energy, y = .fitted, color = .model)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  scale_x_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  labs(
+    title = "CPI Energy index",
+    x = "Data (actual values)",
+    y = "Fitted (predicted values)",
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", panel.border = element_blank())
+```
+
+And looking at the residuals it seems that both models are appropriate.
+
+Deterministic trend: 
+
+```{r}
+table_mod %>%
+  select(deterministic_l1) %>%
+  mygg_tsresiduals()
+```
+
+Stochastic trend:
+
+```{r}
+table_mod %>%
+  select(stochastic_l1) %>%
+  mygg_tsresiduals()
+```
+
+## Outlook for Energy CPI
+
+### WTI Forecast 
+
+In order to use the model to forecast the energy component of CPI one needs to assume a path for oil prices. One possibility is to assume a *random walk* model. The chart below shows some possible simulated paths for the next 2 years based on bootstrap residuals.
+
+```{r wti_model}
+wti_model <- wti %>% 
+  model(
+    rw = NAIVE(value),
+    drift = NAIVE(value ~ drift())
+    )
+wti_sim <- select(wti_model, rw) %>% 
+  generate(h=24, times = 5, boostrap = TRUE)
+```
+
+```{r}
+wti %>% 
+  ggplot(aes(x = month)) +
+  geom_line(aes(y = value), size = 1) +
+  geom_line(aes(y = .sim, color = as.factor(.rep)), data = wti_sim, size = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 10)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 12),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "WTI monthly average",
+    color = NULL,
+    y = "US$ / bbl",
+    x = NULL
+  ) + 
+  guides(color = 'none')
+```
+
+However, if we simulate enough paths and take the average we get the the expected *random walk* behavior. 
+
+```{r}
+wti_forecast <- select(wti_model, rw) %>% forecast(h = 24, bootstrap = TRUE)
+wti_forecast %>% 
+  autoplot(select(wti, -key)) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 10)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 12),
+    labels = scales::label_date_short()
+  ) +
+    labs(
+      title = "WTI monthly average",
+        y = "US$ / bbl",
+    x = NULL
+    ) 
+```
+
+
+But we can also pick a quantile if we want to add a *bias* to the path of future oil prices. In the chart below, the path highlighted in red shows the 80^th^ percentile, or in other words, the path where there are only 20% of the sample above it. The selected path can then be used to forecast energy CPI.
+
+
+```{r}
+wti_forecast %>% 
+  autoplot(select(wti, -key)) +
+  geom_line(
+    aes(y = hl),
+    color = 'red',
+    size = 1,
+    data = mutate(
+      wti_forecast,
+      hl  = hilo(value, 60)$upper)
+    ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 10)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 12),
+    labels = scales::label_date_short()
+  ) +
+    labs(
+      title = "WTI monthly average",
+      subtitle = "red line is the 80th percentile",
+        y = "US$ / bbl",
+    x = NULL
+    ) 
+
+```
+
+### Energy CPI assuming oil in the 80^th^ percentile
+
+```{r}
+wti_future <- wti_forecast %>% 
+  mutate(wti = hilo(value, 60)$upper) %>% 
+  pull(wti)
+
+future_data <- new_data(full_data, 24) %>% 
+  mutate(wti = wti_future)
+
+db <- bind_rows(full_data, future_data) %>% 
+  group_split(is.na(cpi_energy), .keep = FALSE)
+
+
+table_mod %>%
+  select(stochastic_l1) %>%
+  refit(new_data = db[[1]]) %>% 
+  forecast(new_data = db[[2]]) %>% 
+  autoplot(filter_index(full_data, "2000 Jan" ~.)) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 10)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 12),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "CPI Energy index",
+    color = NULL,
+    y = "index",
+    x = NULL
+  )
+
+
+
+
+
+```
+
+
+The expected path for the annual energy inflation would gradually slowdown, but would still be above 15% yoy in the early part of 3Q 2022.
+```{r}
+full_data %>%
+  append_row(24) %>%
+  left_join(
+    table_mod %>%
+      select(stochastic_l1) %>%
+      refit(new_data = db[[1]]) %>%
+      forecast(new_data = db[[2]]) %>%
+      as_tibble() %>%
+      select(month, .mean) %>%
+      rename(cpi_e_fcast = .mean),
+    by = 'month'
+  ) %>% 
+  mutate(cpi_e_full = if_else(is.na(cpi_energy), cpi_e_fcast, cpi_energy),
+         yoy = cpi_e_full / lag(cpi_e_full, 12) - 1,
+         forecast = if_else(is.na(cpi_energy), TRUE, FALSE)) %>% 
+  filter_index("2016 Jan" ~. ) %>% 
+  ggplot(aes(x = month, y = yoy, color = forecast)) +
+  geom_line(size = 1) +
+  geom_vline(
+    xintercept = as_date(yearmonth("2022 Feb")),
+    lty = 'dashed') + 
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    labels = scales::label_percent()
+  ) + 
+   scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 12),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "Energy CPI",
+    x = NULL,
+    y = "% yoy"
+  ) +
+  theme(legend.position = "bottom")
+  
+
+```
+
+### Energy CPI assuming oil in the 40^th^percentile
+
+```{r}
+wti_forecast %>% 
+  autoplot(select(wti, -key)) +
+  geom_line(
+    aes(y = hl),
+    color = 'red',
+    size = 1,
+    data = mutate(
+      wti_forecast,
+      hl  = hilo(value, 20)$lower)
+    ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 10)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 12),
+    labels = scales::label_date_short()
+  ) +
+    labs(
+      title = "WTI monthly average",
+      subtitle = "red line is the 40th percentile",
+        y = "US$ / bbl",
+    x = NULL
+    ) 
+
+
+
+
+wti_future <- wti_forecast %>% 
+  mutate(wti = hilo(value, 20)$lower) %>% 
+  pull(wti)
+
+future_data <- new_data(full_data, 24) %>% 
+  mutate(wti = wti_future)
+
+db <- bind_rows(full_data, future_data) %>% 
+  group_split(is.na(cpi_energy), .keep = FALSE)
+
+
+table_mod %>%
+  select(stochastic_l1) %>%
+  refit(new_data = db[[1]]) %>% 
+  forecast(new_data = db[[2]]) %>% 
+  autoplot(filter_index(full_data, "2000 Jan" ~.)) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 10)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 12),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "CPI Energy index",
+    color = NULL,
+    y = "index",
+    x = NULL
+  )
+
+full_data %>%
+  append_row(24) %>%
+  left_join(
+    table_mod %>%
+      select(stochastic_l1) %>%
+      refit(new_data = db[[1]]) %>%
+      forecast(new_data = db[[2]]) %>%
+      as_tibble() %>%
+      select(month, .mean) %>%
+      rename(cpi_e_fcast = .mean),
+    by = 'month'
+  ) %>% 
+  mutate(cpi_e_full = if_else(is.na(cpi_energy), cpi_e_fcast, cpi_energy),
+         yoy = cpi_e_full / lag(cpi_e_full, 12) - 1,
+         forecast = if_else(is.na(cpi_energy), TRUE, FALSE)) %>% 
+  filter_index("2016 Jan" ~. ) %>% 
+  ggplot(aes(x = month, y = yoy, color = forecast)) +
+  geom_line(size = 1) +
+  geom_vline(
+    xintercept = as_date(yearmonth("2022 Feb")),
+    lty = 'dashed') + 
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    labels = scales::label_percent()
+  ) + 
+   scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 12),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "Energy CPI",
+    x = NULL,
+    y = "% yoy"
+  ) +
+  theme(legend.position = "bottom")
+
+
+```
+
+
+## Non-energy CPI
+```{r}
+bind_rows(energy, cpix) %>%
+  # limit sample to Jan 1986, start of WTI data
+  # brent sample starts at May 1987
+  filter_index("1986 Jan" ~ .) %>%
+  group_by_key() %>%
+  mutate(value = as.vector(scale(log(value)))) %>%
+  ggplot(aes(x = month, y = value, color = key)) +
+  geom_line(size = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 15),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "CPI excluding energy vs. energy cpi",
+    x = NULL,
+    y = "z-score",
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", panel.border = element_blank())
+
+
+# YoY chart -------------------------------------------------------------------
+
+bind_rows(energy, cpix) %>%
+  # limit sample to Jan 1986, start of WTI data
+  # brent sample starts at May 1987
+  filter_index("1985 Jan" ~ .) %>%
+  group_by_key() %>%
+  mutate(value = value / lag(value,12) - 1) %>%
+  ggplot(aes(x = month, y = value, color = key)) +
+  geom_line(size = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    labels = scales::label_percent()
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 15),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "CPI excluding energy vs. energy cpi",
+    x = NULL,
+    y = "% YoY",
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", panel.border = element_blank())
+
+
+
+
+
+```
+
+
+The chart below shows that non-energy inflation is well above the recent historical ranges, while the energy inflation is in line with past episodes.
+
+```{r}
+# Level chart -----------------------------------------------------------------
+bind_rows(core_goods, core_services) %>%
+  filter_index("1986 Jan" ~ .) %>%
+  group_by_key() %>%
+  mutate(value = as.vector(scale(log(value)))) %>%
+  ggplot(aes(x = month, y = value, color = key)) +
+  geom_line(size = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12)
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 15),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "Core CPI goods vs. services",
+    x = NULL,
+    y = "z-score",
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", panel.border = element_blank())
+
+
+
+# YoY chart -------------------------------------------------------------------
+bind_rows(energy, cpix) %>%
+  # limit sample to Jan 1986, start of WTI data
+  # brent sample starts at May 1987
+  filter_index("1985 Jan" ~ .) %>%
+  group_by_key() %>%
+  mutate(value = value / lag(value,12) - 1) %>%
+  drop_na() %>% 
+  mutate(value = as.vector(scale(value))) %>% 
+  ggplot(aes(x = month, y = value, color = key)) +
+  geom_line(size = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 15)
+  ) +
+  labs(
+    title = "CPI excluding energy vs. energy cpi",
+    x = NULL,
+    y = "z-score",
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", panel.border = element_blank())
+
+```
+
+## Core goods vs core services CPI
+
+```{r}
+bind_rows(core_goods, core_services) %>%
+  filter_index("1985 Jan" ~ .) %>%
+  group_by_key() %>%
+  mutate(value = value / lag(value,12) - 1) %>%
+  drop_na() %>% 
+  ggplot(aes(x = month, y = value, color = key)) +
+  geom_line(size = 1) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    labels = scales::label_percent()
+  ) +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n = 15),
+    labels = scales::label_date_short()
+  ) +
+  labs(
+    title = "Core CPI goods vs. services",
+    x = NULL,
+    y = "% YoY",
+    color = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom", panel.border = element_blank())
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ## Scatter plot -->
+
+<!-- The relationship between energy CPI and WTI prices is clearly nonlinear.  -->
+
+<!-- ```{r, fig.asp=1} -->
+
+<!-- bind_rows(energy, wti) %>%  -->
+
+<!--   # limit sample to Jan 1986, start of WTI data -->
+
+<!--   # brent sample starts at May 1987 -->
+
+<!--   filter_index("1986 Jan" ~. ) %>%  -->
+
+<!--   group_by_key() %>%  -->
+
+<!--   mutate(value = as.vector(scale(log(value)))) %>%  -->
+
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+
+<!--   ggplot(aes(x = wti, y = cpi_energy)) + -->
+
+<!--   geom_point() +  -->
+
+<!--   geom_hline(yintercept = 0, lty = 'dashed') + -->
+
+<!--   geom_vline(xintercept = 0, lty = 'dashed') + -->
+
+<!--   geom_abline(slope = 1, intercept = 0, lty = 'dashed') + -->
+
+<!--   geom_smooth(se = TRUE) +  -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   scale_x_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--     ) + -->
+
+<!--   labs( -->
+
+<!--     title = "Energy CPI index vs. oil price", -->
+
+<!--     x = 'WTI (z-score)', -->
+
+<!--     y = 'CPI energy (z-score)', -->
+
+<!--     color = NULL -->
+
+<!--     ) + -->
+
+<!--   theme_bw() +  -->
+
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+
+<!-- ``` -->
+
+<!-- Looking at the YoY changes -->
+
+<!-- ```{r} -->
+
+<!-- bind_rows(energy, wti) %>%  -->
+
+<!--   # limit sample to Jan 1986, start of WTI data -->
+
+<!--   # brent sample starts at May 1987 -->
+
+<!--   group_by_key() %>%  -->
+
+<!--   mutate(value = log(value/lag(value,12))) %>%  -->
+
+<!--   filter_index("1986 Jan" ~. ) %>%  -->
+
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+
+<!--   drop_na() %>%  -->
+
+<!--   ggplot(aes(x = wti, y = cpi_energy)) + -->
+
+<!--   geom_point() +  -->
+
+<!--   geom_hline(yintercept = 0, lty = 'dashed') + -->
+
+<!--   geom_vline(xintercept = 0, lty = 'dashed') + -->
+
+<!--   geom_smooth(se = FALSE, method = "gam", formula = y ~ s(x, bs = "cs")) +  -->
+
+<!--   geom_smooth(se = FALSE, method = MASS::rlm, lty = 'dashed', formula = y ~ x) +  -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12), -->
+
+<!--     labels = scales::label_percent() -->
+
+<!--   ) + -->
+
+<!--   scale_x_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12), -->
+
+<!--     labels = scales::label_percent() -->
+
+<!--     ) + -->
+
+<!--   labs( -->
+
+<!--     title = "Energy CPI index vs. oil price", -->
+
+<!--     x = 'WTI (yoy)', -->
+
+<!--     y = 'CPI energy (yoy)', -->
+
+<!--     color = NULL -->
+
+<!--     ) + -->
+
+<!--   theme_bw() +  -->
+
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+
+<!-- ``` -->
+
+<!-- Looking at quarterly changes -->
+
+<!-- ```{r} -->
+
+<!-- bind_rows(energy, wti) %>%  -->
+
+<!--   # limit sample to Jan 1986, start of WTI data -->
+
+<!--   # brent sample starts at May 1987 -->
+
+<!--   group_by_key() %>%  -->
+
+<!--   mutate(value = log(value/lag(value,3))) %>%  -->
+
+<!--   filter_index("1986 Jan" ~. ) %>%  -->
+
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+
+<!--   drop_na() %>%  -->
+
+<!--   ggplot(aes(x = wti, y = cpi_energy)) + -->
+
+<!--   geom_point() +  -->
+
+<!--   geom_hline(yintercept = 0, lty = 'dashed') + -->
+
+<!--   geom_vline(xintercept = 0, lty = 'dashed') + -->
+
+<!--   geom_smooth(se = FALSE, method = "gam", formula = y ~ s(x, bs = "cs")) +  -->
+
+<!--   geom_smooth(se = FALSE, method = MASS::rlm, lty = 'dashed', formula = y ~ x) +  -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12), -->
+
+<!--     labels = scales::label_percent() -->
+
+<!--   ) + -->
+
+<!--   scale_x_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12), -->
+
+<!--     labels = scales::label_percent() -->
+
+<!--     ) + -->
+
+<!--   labs( -->
+
+<!--     title = "Energy CPI index vs. oil price", -->
+
+<!--     x = 'WTI (m/m-3)', -->
+
+<!--     y = 'CPI energy (m/m-3)', -->
+
+<!--     color = NULL -->
+
+<!--     ) + -->
+
+<!--   theme_bw() +  -->
+
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+
+<!-- ``` -->
+
+<!-- ## Addint a trend  -->
+
+<!-- ```{r} -->
+
+<!-- trend_mod <- bind_rows(energy, wti) %>%  -->
+
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+
+<!--   drop_na() %>%  -->
+
+<!--   model(trend = TSLM(log(cpi_energy) ~ log(wti) + trend()))  -->
+
+<!-- report(trend_mod) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- augment(trend_mod) %>%  -->
+
+<!--   ggplot(aes(x = month)) +  -->
+
+<!--   geom_line(aes(y = cpi_energy, colour = "Data"), size = 1) + -->
+
+<!--   geom_line(aes(y = .fitted, colour = "Fitted"), size = 1) + -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   scale_x_yearmonth( -->
+
+<!--     breaks = scales::breaks_pretty( n = 15), -->
+
+<!--     labels = scales::label_date_short() -->
+
+<!--   ) + -->
+
+<!--   labs( -->
+
+<!--     title = "CPI Energy index", -->
+
+<!--     x = NULL, -->
+
+<!--     y = NULL, -->
+
+<!--     color = NULL -->
+
+<!--   ) + -->
+
+<!--    theme_bw() +  -->
+
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- augment(trend_mod) %>%  -->
+
+<!--   ggplot(aes(x = cpi_energy, y = .fitted)) +  -->
+
+<!--   geom_point() + -->
+
+<!--   geom_abline(intercept = 0, slope = 1) +  -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   scale_x_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   labs( -->
+
+<!--     title = "CPI Energy index", -->
+
+<!--     x = "Data (actual values)", -->
+
+<!--     y = "Fitted (predicted values)", -->
+
+<!--     color = NULL -->
+
+<!--   ) + -->
+
+<!--    theme_bw() +  -->
+
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- trend_mod %>% mygg_tsresiduals() -->
+
+<!-- trend_mod %>% mygg_tsresiduals(plot_type = 'partial') -->
+
+<!-- ``` -->
+
+<!-- report(ar_mod) -->
+
+<!-- glance(ar_mod) %>% select(.model, adj_r_squared, CV, AIC, AICc, BIC) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- augment(ar_mod) %>%  -->
+
+<!--   ggplot(aes(x = month)) +  -->
+
+<!--   geom_line(aes(y = cpi_energy, colour = "Data"), size = 1) + -->
+
+<!--   geom_line(aes(y = .fitted, colour = "Fitted"), size = 1) + -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   scale_x_yearmonth( -->
+
+<!--     breaks = scales::breaks_pretty( n = 15), -->
+
+<!--     labels = scales::label_date_short() -->
+
+<!--   ) + -->
+
+<!--   labs( -->
+
+<!--     title = "CPI Energy index", -->
+
+<!--     x = NULL, -->
+
+<!--     y = NULL, -->
+
+<!--     color = NULL -->
+
+<!--   ) + -->
+
+<!--    theme_bw() +  -->
+
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- augment(ar_mod) %>%  -->
+
+<!--   ggplot(aes(x = cpi_energy, y = .fitted, color = .model)) +  -->
+
+<!--   geom_point() + -->
+
+<!--   geom_abline(intercept = 0, slope = 1) +  -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   scale_x_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   labs( -->
+
+<!--     title = "CPI Energy index", -->
+
+<!--     x = "Data (actual values)", -->
+
+<!--     y = "Fitted (predicted values)", -->
+
+<!--     color = NULL -->
+
+<!--   ) + -->
+
+<!--    theme_bw() +  -->
+
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- ar_mod %>% select(ar0) %>% mygg_tsresiduals() -->
+
+<!-- ar_mod %>% select(ar5) %>% mygg_tsresiduals(plot_type = 'partial') -->
+
+<!-- ar_mod %>% select(ar6) %>% report() -->
+
+<!-- ``` -->
+
+<!-- ## ARIMA -->
+
+<!-- ```{r} -->
+
+<!-- arima_mod <- bind_rows(energy, wti) %>%  -->
+
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+
+<!--   drop_na() %>%  -->
+
+<!--   model( -->
+
+<!--     arima = ARIMA(log(cpi_energy) ~ trend() + log(wti)) -->
+
+<!--   ) -->
+
+<!-- report(arima_mod) -->
+
+<!-- glance(ar_mod) %>% select(.model, adj_r_squared, CV, AIC, AICc, BIC) -->
+
+<!-- arima_mod %>% mygg_tsresiduals(plot_type = 'partial') -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- augment(arima_mod) %>%  -->
+
+<!--   ggplot(aes(x = cpi_energy, y = .fitted)) +  -->
+
+<!--   geom_point() + -->
+
+<!--   geom_abline(intercept = 0, slope = 1) +  -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   scale_x_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   labs( -->
+
+<!--     title = "CPI Energy index", -->
+
+<!--     x = "Data (actual values)", -->
+
+<!--     y = "Fitted (predicted values)", -->
+
+<!--     color = NULL -->
+
+<!--   ) + -->
+
+<!--    theme_bw() +  -->
+
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- augment(arima_mod) %>%  -->
+
+<!--   ggplot(aes(x = month)) +  -->
+
+<!--   geom_line(aes(y = cpi_energy, colour = "Data"), size = 1) + -->
+
+<!--   geom_line(aes(y = .fitted, colour = "Fitted"), size = 1) + -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = scales::breaks_extended(n = 12) -->
+
+<!--   ) + -->
+
+<!--   scale_x_yearmonth( -->
+
+<!--     breaks = scales::breaks_pretty( n = 15), -->
+
+<!--     labels = scales::label_date_short() -->
+
+<!--   ) + -->
+
+<!--   labs( -->
+
+<!--     title = "CPI Energy index", -->
+
+<!--     x = NULL, -->
+
+<!--     y = NULL, -->
+
+<!--     color = NULL -->
+
+<!--   ) + -->
+
+<!--    theme_bw() +  -->
+
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+
+<!-- ``` -->
+
+<!-- # A  -->

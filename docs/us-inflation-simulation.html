@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="pgg1309" />
+
+<meta name="date" content="2022-02-14" />
+
+<title>us-inflation-simulation</title>
+
+<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Low Pass Macro</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/pgg1309/lpm">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">us-inflation-simulation</h1>
+<h4 class="author">pgg1309</h4>
+<h4 class="date">2022-02-14</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2022-02-21
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
+</p>
+<p>
+<strong>Knit directory:</strong> <code>lpm/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version 1.7.0). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges"> <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted changes </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguncommittedchanges" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The R Markdown is untracked by Git. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20220204code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20220204)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20220204code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20220204)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcompgg1309lpmtree4e551960ee75f6b6b34a73ce26f06f51d2bb20dftargetblank4e55196a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/pgg1309/lpm/tree/4e551960ee75f6b6b34a73ce26f06f51d2bb20df" target="_blank">4e55196</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcompgg1309lpmtree4e551960ee75f6b6b34a73ce26f06f51d2bb20dftargetblank4e55196a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version <a href="https://github.com/pgg1309/lpm/tree/4e551960ee75f6b6b34a73ce26f06f51d2bb20df" target="_blank">4e55196</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+
+Untracked files:
+    Untracked:  analysis/us-inflation-simulation.Rmd
+    Untracked:  analysis/us-treasury-flows.Rmd
+    Untracked:  code/download_mspd.R
+    Untracked:  code/download_public_debt.R
+    Untracked:  code/fed_soma_holdings.R
+    Untracked:  code/plot_cpi_charts.R
+    Untracked:  data/mspd/
+    Untracked:  output/mspd_processed/
+    Untracked:  tmp.csv
+
+Unstaged changes:
+    Modified:   .Rprofile
+    Modified:   code/README.md
+    Modified:   data/README.md
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with <code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<div id="us-cpi---possible-scenarios" class="section level1">
+<h1>US CPI - possible scenarios</h1>
+<div id="energy-cpi" class="section level2">
+<h2>Energy CPI</h2>
+<p>The chart below plots the <em>z-score</em> of the CPI energy index, WTI and Brent oil prices. Adjusting for volatility, it is clear that oil prices and the energy CPI index share a similar trend.</p>
+<p><img src="figure/us-inflation-simulation.Rmd/energy_chart-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="a-simple-model" class="section level3">
+<h3>A simple model</h3>
+<p>Despite the clear association between energy CPI and oil prices, a simple model fails to capture the dynamics.</p>
+<pre><code>Series: cpi_energy 
+Model: TSLM 
+Transformation: log(cpi_energy) 
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.29389 -0.07213 -0.01458  0.06443  0.62998 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 3.054946   0.029093   105.0   &lt;2e-16 ***
+log(wti)    0.543057   0.007963    68.2   &lt;2e-16 ***
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+Residual standard error: 0.1071 on 431 degrees of freedom
+Multiple R-squared: 0.9152, Adjusted R-squared: 0.915
+F-statistic:  4651 on 1 and 431 DF, p-value: &lt; 2.22e-16</code></pre>
+<p><img src="figure/us-inflation-simulation.Rmd/simple_model_fit-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/us-inflation-simulation.Rmd/simple_model_scatter-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Looking at the <em>residuals</em> it is clear that this simple model is misspecified as there is autocorrelation in the residuals.</p>
+<p><img src="figure/us-inflation-simulation.Rmd/simple_model_resid-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="additional-models" class="section level3">
+<h3>Additional models</h3>
+<p>The residuals of the <em>simple model</em> reported in the previous section clearly shows the presence of a <em>trend</em> or <em>drift</em>. Moreover, even allowing for the presence of a trend the residuals present serial correlation.</p>
+<p>Therefore it seems appropriated to model energy cpi considering a trend and assuming an ARMA process for the residuals.</p>
+<p>A <em>deterministic trend</em> is represented by</p>
+<p><span class="math display">\[ ecpi_t = \beta_0 + \beta_1 wti_t + \beta_2 t + \eta_t\]</span></p>
+<p>where <span class="math inline">\(\eta_t\)</span> is an ARMA process. A <em>stochastic trend</em> is represented by</p>
+<p><span class="math display">\[ecpi_t = ecpi_{t-1} + \beta_1 wti_t + \beta_2 + \eta_t \]</span></p>
+<p>Additionally, I’ve tested both models including up to four lags for the <span class="math inline">\(wti_t\)</span> prices.</p>
+<p>The table blow shows the different models considered, using data up to December 2019, and sorted by AICc.</p>
+<pre><code># A tibble: 10 x 8
+   .model             sigma2 log_lik    AIC   AICc    BIC ar_roots  ma_roots 
+   &lt;chr&gt;               &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;list&gt;    &lt;list&gt;   
+ 1 deterministic_l1 0.000311   1068. -2118. -2118. -2082. &lt;cpl [1]&gt; &lt;cpl [3]&gt;
+ 2 deterministic_l3 0.000304   1068. -2113. -2113. -2069. &lt;cpl [1]&gt; &lt;cpl [3]&gt;
+ 3 stochastic_l1    0.000316   1063. -2111. -2111. -2083. &lt;cpl [0]&gt; &lt;cpl [3]&gt;
+ 4 deterministic_l2 0.000312   1065. -2111. -2110. -2071. &lt;cpl [1]&gt; &lt;cpl [3]&gt;
+ 5 deterministic_l4 0.000301   1067. -2111. -2110. -2062. &lt;cpl [1]&gt; &lt;cpl [3]&gt;
+ 6 stochastic_l3    0.000309   1062. -2104. -2104. -2064. &lt;cpl [3]&gt; &lt;cpl [1]&gt;
+ 7 stochastic_l2    0.000316   1060. -2103. -2103. -2071. &lt;cpl [0]&gt; &lt;cpl [3]&gt;
+ 8 stochastic_l4    0.000306   1061. -2100. -2100. -2056. &lt;cpl [3]&gt; &lt;cpl [1]&gt;
+ 9 deterministic    0.000454    994. -1968. -1968. -1928. &lt;cpl [3]&gt; &lt;cpl [3]&gt;
+10 stochastic       0.000464    988. -1959. -1959. -1927. &lt;cpl [3]&gt; &lt;cpl [2]&gt;</code></pre>
+<p>Looking at the AICc information criteria the best model includes a deterministic trend, one lag of <span class="math inline">\(wti\)</span>, and ARMA(1,3) errors. The BIC criteria suggest a stochastic trend model with one lag of <span class="math inline">\(wti\)</span> and MA(3) errors.</p>
+<p>Both models are printed below:</p>
+<pre><code>Series: cpi_energy 
+Model: LM w/ ARIMA(1,0,3) errors 
+Transformation: log(cpi_energy) 
+
+Coefficients:
+         ar1     ma1      ma2      ma3  trend()  log(wti)  lag(log(wti))
+      0.9527  0.2208  -0.2147  -0.2105   0.0015    0.1373         0.1512
+s.e.  0.0220  0.0548   0.0562   0.0545   0.0001    0.0109         0.0107
+      intercept
+         3.6554
+s.e.     0.0517
+
+sigma^2 estimated as 0.0003114:  log likelihood=1068.06
+AIC=-2118.13   AICc=-2117.67   BIC=-2082.02</code></pre>
+<pre><code>Series: cpi_energy 
+Model: LM w/ ARIMA(0,1,3) errors 
+Transformation: log(cpi_energy) 
+
+Coefficients:
+         ma1      ma2      ma3  log(wti)  lag(log(wti))  intercept
+      0.1873  -0.2531  -0.2351    0.1326         0.1469     0.0012
+s.e.  0.0485   0.0491   0.0521    0.0104         0.0102     0.0006
+
+sigma^2 estimated as 0.0003157:  log likelihood=1062.62
+AIC=-2111.25   AICc=-2110.97   BIC=-2083.19</code></pre>
+<p>And the model’s fitted values are similar and close to the actual observed values.</p>
+<p><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>And looking at the residuals it seems that both models are appropriate.</p>
+<p>Deterministic trend:</p>
+<p><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Stochastic trend:</p>
+<p><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="outlook-for-energy-cpi" class="section level2">
+<h2>Outlook for Energy CPI</h2>
+<div id="wti-forecast" class="section level3">
+<h3>WTI Forecast</h3>
+<p>In order to use the model to forecast the energy component of CPI one needs to assume a path for oil prices. One possibility is to assume a <em>random walk</em> model. The chart below shows some possible simulated paths for the next 2 years based on bootstrap residuals.</p>
+<p><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>However, if we simulate enough paths and take the average we get the the expected <em>random walk</em> behavior.</p>
+<p><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>But we can also pick a quantile if we want to add a <em>bias</em> to the path of future oil prices. In the chart below, the path highlighted in red shows the 80<sup>th</sup> percentile, or in other words, the path where there are only 20% of the sample above it. The selected path can then be used to forecast energy CPI.</p>
+<p><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="energy-cpi-assuming-oil-in-the-80th-percentile" class="section level3">
+<h3>Energy CPI assuming oil in the 80<sup>th</sup> percentile</h3>
+<p><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The expected path <img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="energy-cpi-assuming-oil-in-the-40thpercentile" class="section level3">
+<h3>Energy CPI assuming oil in the 40<sup>th</sup>percentile</h3>
+<p><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-9-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/us-inflation-simulation.Rmd/unnamed-chunk-9-3.png" width="672" style="display: block; margin: auto;" /></p>
+<!-- ## Scatter plot -->
+<!-- The relationship between energy CPI and WTI prices is clearly nonlinear.  -->
+<!-- ```{r, fig.asp=1} -->
+<!-- bind_rows(energy, wti) %>%  -->
+<!--   # limit sample to Jan 1986, start of WTI data -->
+<!--   # brent sample starts at May 1987 -->
+<!--   filter_index("1986 Jan" ~. ) %>%  -->
+<!--   group_by_key() %>%  -->
+<!--   mutate(value = as.vector(scale(log(value)))) %>%  -->
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+<!--   ggplot(aes(x = wti, y = cpi_energy)) + -->
+<!--   geom_point() +  -->
+<!--   geom_hline(yintercept = 0, lty = 'dashed') + -->
+<!--   geom_vline(xintercept = 0, lty = 'dashed') + -->
+<!--   geom_abline(slope = 1, intercept = 0, lty = 'dashed') + -->
+<!--   geom_smooth(se = TRUE) +  -->
+<!--   scale_y_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   scale_x_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--     ) + -->
+<!--   labs( -->
+<!--     title = "Energy CPI index vs. oil price", -->
+<!--     x = 'WTI (z-score)', -->
+<!--     y = 'CPI energy (z-score)', -->
+<!--     color = NULL -->
+<!--     ) + -->
+<!--   theme_bw() +  -->
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+<!-- ``` -->
+<!-- Looking at the YoY changes -->
+<!-- ```{r} -->
+<!-- bind_rows(energy, wti) %>%  -->
+<!--   # limit sample to Jan 1986, start of WTI data -->
+<!--   # brent sample starts at May 1987 -->
+<!--   group_by_key() %>%  -->
+<!--   mutate(value = log(value/lag(value,12))) %>%  -->
+<!--   filter_index("1986 Jan" ~. ) %>%  -->
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+<!--   drop_na() %>%  -->
+<!--   ggplot(aes(x = wti, y = cpi_energy)) + -->
+<!--   geom_point() +  -->
+<!--   geom_hline(yintercept = 0, lty = 'dashed') + -->
+<!--   geom_vline(xintercept = 0, lty = 'dashed') + -->
+<!--   geom_smooth(se = FALSE, method = "gam", formula = y ~ s(x, bs = "cs")) +  -->
+<!--   geom_smooth(se = FALSE, method = MASS::rlm, lty = 'dashed', formula = y ~ x) +  -->
+<!--   scale_y_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12), -->
+<!--     labels = scales::label_percent() -->
+<!--   ) + -->
+<!--   scale_x_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12), -->
+<!--     labels = scales::label_percent() -->
+<!--     ) + -->
+<!--   labs( -->
+<!--     title = "Energy CPI index vs. oil price", -->
+<!--     x = 'WTI (yoy)', -->
+<!--     y = 'CPI energy (yoy)', -->
+<!--     color = NULL -->
+<!--     ) + -->
+<!--   theme_bw() +  -->
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+<!-- ``` -->
+<!-- Looking at quarterly changes -->
+<!-- ```{r} -->
+<!-- bind_rows(energy, wti) %>%  -->
+<!--   # limit sample to Jan 1986, start of WTI data -->
+<!--   # brent sample starts at May 1987 -->
+<!--   group_by_key() %>%  -->
+<!--   mutate(value = log(value/lag(value,3))) %>%  -->
+<!--   filter_index("1986 Jan" ~. ) %>%  -->
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+<!--   drop_na() %>%  -->
+<!--   ggplot(aes(x = wti, y = cpi_energy)) + -->
+<!--   geom_point() +  -->
+<!--   geom_hline(yintercept = 0, lty = 'dashed') + -->
+<!--   geom_vline(xintercept = 0, lty = 'dashed') + -->
+<!--   geom_smooth(se = FALSE, method = "gam", formula = y ~ s(x, bs = "cs")) +  -->
+<!--   geom_smooth(se = FALSE, method = MASS::rlm, lty = 'dashed', formula = y ~ x) +  -->
+<!--   scale_y_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12), -->
+<!--     labels = scales::label_percent() -->
+<!--   ) + -->
+<!--   scale_x_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12), -->
+<!--     labels = scales::label_percent() -->
+<!--     ) + -->
+<!--   labs( -->
+<!--     title = "Energy CPI index vs. oil price", -->
+<!--     x = 'WTI (m/m-3)', -->
+<!--     y = 'CPI energy (m/m-3)', -->
+<!--     color = NULL -->
+<!--     ) + -->
+<!--   theme_bw() +  -->
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+<!-- ``` -->
+<!-- ## Addint a trend  -->
+<!-- ```{r} -->
+<!-- trend_mod <- bind_rows(energy, wti) %>%  -->
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+<!--   drop_na() %>%  -->
+<!--   model(trend = TSLM(log(cpi_energy) ~ log(wti) + trend()))  -->
+<!-- report(trend_mod) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- augment(trend_mod) %>%  -->
+<!--   ggplot(aes(x = month)) +  -->
+<!--   geom_line(aes(y = cpi_energy, colour = "Data"), size = 1) + -->
+<!--   geom_line(aes(y = .fitted, colour = "Fitted"), size = 1) + -->
+<!--   scale_y_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   scale_x_yearmonth( -->
+<!--     breaks = scales::breaks_pretty( n = 15), -->
+<!--     labels = scales::label_date_short() -->
+<!--   ) + -->
+<!--   labs( -->
+<!--     title = "CPI Energy index", -->
+<!--     x = NULL, -->
+<!--     y = NULL, -->
+<!--     color = NULL -->
+<!--   ) + -->
+<!--    theme_bw() +  -->
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- augment(trend_mod) %>%  -->
+<!--   ggplot(aes(x = cpi_energy, y = .fitted)) +  -->
+<!--   geom_point() + -->
+<!--   geom_abline(intercept = 0, slope = 1) +  -->
+<!--   scale_y_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   scale_x_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   labs( -->
+<!--     title = "CPI Energy index", -->
+<!--     x = "Data (actual values)", -->
+<!--     y = "Fitted (predicted values)", -->
+<!--     color = NULL -->
+<!--   ) + -->
+<!--    theme_bw() +  -->
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- trend_mod %>% mygg_tsresiduals() -->
+<!-- trend_mod %>% mygg_tsresiduals(plot_type = 'partial') -->
+<!-- ``` -->
+<!-- report(ar_mod) -->
+<!-- glance(ar_mod) %>% select(.model, adj_r_squared, CV, AIC, AICc, BIC) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- augment(ar_mod) %>%  -->
+<!--   ggplot(aes(x = month)) +  -->
+<!--   geom_line(aes(y = cpi_energy, colour = "Data"), size = 1) + -->
+<!--   geom_line(aes(y = .fitted, colour = "Fitted"), size = 1) + -->
+<!--   scale_y_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   scale_x_yearmonth( -->
+<!--     breaks = scales::breaks_pretty( n = 15), -->
+<!--     labels = scales::label_date_short() -->
+<!--   ) + -->
+<!--   labs( -->
+<!--     title = "CPI Energy index", -->
+<!--     x = NULL, -->
+<!--     y = NULL, -->
+<!--     color = NULL -->
+<!--   ) + -->
+<!--    theme_bw() +  -->
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- augment(ar_mod) %>%  -->
+<!--   ggplot(aes(x = cpi_energy, y = .fitted, color = .model)) +  -->
+<!--   geom_point() + -->
+<!--   geom_abline(intercept = 0, slope = 1) +  -->
+<!--   scale_y_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   scale_x_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   labs( -->
+<!--     title = "CPI Energy index", -->
+<!--     x = "Data (actual values)", -->
+<!--     y = "Fitted (predicted values)", -->
+<!--     color = NULL -->
+<!--   ) + -->
+<!--    theme_bw() +  -->
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- ar_mod %>% select(ar0) %>% mygg_tsresiduals() -->
+<!-- ar_mod %>% select(ar5) %>% mygg_tsresiduals(plot_type = 'partial') -->
+<!-- ar_mod %>% select(ar6) %>% report() -->
+<!-- ``` -->
+<!-- ## ARIMA -->
+<!-- ```{r} -->
+<!-- arima_mod <- bind_rows(energy, wti) %>%  -->
+<!--   pivot_wider(names_from = key, values_from = value) %>%  -->
+<!--   drop_na() %>%  -->
+<!--   model( -->
+<!--     arima = ARIMA(log(cpi_energy) ~ trend() + log(wti)) -->
+<!--   ) -->
+<!-- report(arima_mod) -->
+<!-- glance(ar_mod) %>% select(.model, adj_r_squared, CV, AIC, AICc, BIC) -->
+<!-- arima_mod %>% mygg_tsresiduals(plot_type = 'partial') -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- augment(arima_mod) %>%  -->
+<!--   ggplot(aes(x = cpi_energy, y = .fitted)) +  -->
+<!--   geom_point() + -->
+<!--   geom_abline(intercept = 0, slope = 1) +  -->
+<!--   scale_y_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   scale_x_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   labs( -->
+<!--     title = "CPI Energy index", -->
+<!--     x = "Data (actual values)", -->
+<!--     y = "Fitted (predicted values)", -->
+<!--     color = NULL -->
+<!--   ) + -->
+<!--    theme_bw() +  -->
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- augment(arima_mod) %>%  -->
+<!--   ggplot(aes(x = month)) +  -->
+<!--   geom_line(aes(y = cpi_energy, colour = "Data"), size = 1) + -->
+<!--   geom_line(aes(y = .fitted, colour = "Fitted"), size = 1) + -->
+<!--   scale_y_continuous( -->
+<!--     breaks = scales::breaks_extended(n = 12) -->
+<!--   ) + -->
+<!--   scale_x_yearmonth( -->
+<!--     breaks = scales::breaks_pretty( n = 15), -->
+<!--     labels = scales::label_date_short() -->
+<!--   ) + -->
+<!--   labs( -->
+<!--     title = "CPI Energy index", -->
+<!--     x = NULL, -->
+<!--     y = NULL, -->
+<!--     color = NULL -->
+<!--   ) + -->
+<!--    theme_bw() +  -->
+<!--   theme(legend.position = 'bottom', panel.border = element_blank()) -->
+<!-- ``` -->
+<!-- # A  -->
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre><code>R version 4.1.2 (2021-11-01)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19044)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] fable_0.3.1       feasts_0.2.2      fabletools_0.3.2  tsibbledata_0.4.0
+ [5] tsibble_1.1.1     ggplot2_3.3.5     lubridate_1.8.0   tidyr_1.2.0      
+ [9] dplyr_1.0.8       tibble_3.1.6      fpp3_0.4.0        workflowr_1.7.0  
+
+loaded via a namespace (and not attached):
+ [1] Rcpp_1.0.8           getPass_0.2-2        ps_1.6.0            
+ [4] assertthat_0.2.1     rprojroot_2.0.2      digest_0.6.29       
+ [7] utf8_1.2.2           R6_2.5.1             evaluate_0.15       
+[10] highr_0.9            httr_1.4.2           pillar_1.7.0        
+[13] rlang_1.0.1          curl_4.3.2           rstudioapi_0.13     
+[16] whisker_0.4          callr_3.7.0          jquerylib_0.1.4     
+[19] pins_1.0.1           rmarkdown_2.11       fredr_2.1.0         
+[22] labeling_0.4.2       stringr_1.4.0        munsell_0.5.0       
+[25] anytime_0.3.9        numDeriv_2016.8-1.1  compiler_4.1.2      
+[28] httpuv_1.6.5         xfun_0.29            pkgconfig_2.0.3     
+[31] htmltools_0.5.2      tidyselect_1.1.1     progressr_0.10.0    
+[34] fansi_1.0.2          crayon_1.5.0         withr_2.4.3         
+[37] later_1.3.0          rappdirs_0.3.3       grid_4.1.2          
+[40] distributional_0.3.0 jsonlite_1.7.3       gtable_0.3.0        
+[43] lifecycle_1.0.1      DBI_1.1.2            git2r_0.29.0        
+[46] magrittr_2.0.2       scales_1.1.1         cli_3.2.0           
+[49] stringi_1.7.6        farver_2.1.0         fs_1.5.2            
+[52] promises_1.2.0.1     bslib_0.3.1          ellipsis_0.3.2      
+[55] generics_0.1.2       vctrs_0.3.8          tools_4.1.2         
+[58] glue_1.6.1           purrr_0.3.4          processx_3.5.2      
+[61] fastmap_1.1.0        yaml_2.3.4           colorspace_2.0-2    
+[64] knitr_1.37           sass_0.4.0          </code></pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

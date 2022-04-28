@@ -1,0 +1,118 @@
+---
+title: "fed-reserves-sandp"
+author: "pgg1309"
+date: "2022-04-25"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 9
+)
+```
+
+```{r}
+library(fpp3)
+library(DatastreamDSWS2R)
+
+### Global variables
+update.data <- FALSE
+
+### Functions
+get_data <-
+  function(instrument,
+           type,
+           sdate = "1985-01-01",
+           edate = Sys.Date(),
+           freq = "D",
+           update = FALSE) {
+    if (update) {
+      mydsws <- dsws$new()
+      mydsws$chunkLimit <- 50L
+      xx <- mydsws$timeSeriesRequest(
+        instrument = instrument,
+        datatype = type,
+        startDate = sdate,
+        endDate = edate,
+        frequency = freq
+      )
+      xx <- tibble(index = as.Date(zoo::index(xx)),
+                        value = as.vector(xx),
+      )
+      fname  <- paste0(stringr::str_extract_all(instrument, "[:alnum:]")[[1]], collapse = "")
+      fname2 <- paste0(stringr::str_extract_all(type, "[:alnum:]")[[1]], collapse = "") 
+      saveRDS(xx, paste0("data/fed-reserves-sandp/", fname, "-", fname2, ".rds"))
+      return(xx)
+    } else {
+      fname  <- paste0(stringr::str_extract_all(instrument, "[:alnum:]")[[1]], collapse = "")
+      fname2 <- paste0(stringr::str_extract_all(type, "[:alnum:]")[[1]], collapse = "") 
+      xx <- readRDS(paste0("data/fed-reserves-sandp/", fname, "-", fname2, ".rds"))
+      return(xx)
+    }
+  }
+
+
+```
+
+## Introduction
+
+This is a followup from Citi's note:
+
+> CITI'S TAKE
+>
+> The sudden shift weaker in markets yet again stems less from hawkish rhetoric and more from abrupt shifts in global liquidity. Reserves at the Fed last week fell by \$460bn: the single biggest weekly drop on record.
+>
+> We haven't actually much to say about this that we haven't said already. Not only is central bank tightening not fully priced in to risk assets, but the often confusing week-on-week lurches in markets are frequently best explained in terms of liquidity addition and subtraction by central banks, which simply swamp anything coming from the private sector.
+>
+> The single best way to monitor this is not through asset purchases, but through changes in reserves. When, as last week, the Treasury General Account rises by \$360bn, RRP rises by \$100bn and reserves at the Fed fall by \$460bn as a result, it's enough to swamp the liquidity addition from the ECB and BoJ, which had previously been doing quite a good job of making markets look resilient.
+>
+> Unfortunately it's hard to say whether this immediate liquidity drainage is now fully priced in. Sometimes the impact on markets is reasonably coincident; at other times it looks as though there is around a 3-week lag. One useful rule of thumb is that \$100bn in reserves gain or drain seems to equate to around 1% on equities. But even if the boost to TGA (and hence drain to reserves) was likely a one-off factor associated with year-end tax payments, some of which should now reverse, the medium-term trajectory remains clear: QT is likely to make the outlook for global liquidity for the rest of this year look much more like Q1 than like the spring break markets had been afforded in recent weeks.
+
+## Chart
+
+```{r}
+# load data
+spx  <- get_data("S&PCOMP", "X", "2010-01-01", freq = "D", update = update.data)
+reserve <- get_data("USRRESW", "X", "2010-01-01", freq = "D", update = update.data)
+
+db <- full_join(spx, reserve, by = 'index') %>% 
+  rename(spx = value.x, reserves = value.y) %>%
+  mutate(w = wday(index)) %>% 
+  filter(w == 4) %>% 
+  mutate(spxr = spx / lag(spx) - 1,
+         reservesr = reserves / lag(reserves) - 1) %>% 
+  select(-spx, -reserves, -w) %>% 
+  drop_na() %>% 
+  mutate(m = factor(month(index, label = TRUE))) %>% 
+  filter(index >= "2010-01-01")
+
+db %>% 
+  ggplot(aes(x = reservesr, y = spxr)) +
+  geom_point() +
+  geom_point(size = 2, data = filter(db, m == "Apr"), color = 'red') +
+  geom_smooth(method = MASS::rlm, formula = y ~x, se = FALSE) +
+  geom_smooth(method = MASS::rlm, formula = y ~x, se = FALSE, data = filter(db, m == "Apr"), color = 'red') +
+  scale_x_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    labels = scales::label_percent(accuracy = 0.1)
+  ) + 
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 12),
+    labels = scales::label_percent(accuracy = 0.1)
+  ) +
+  labs(
+    title = "Reserves at the Fed vs SPX (red is Apr data)",
+    subtitle = "% weekly changes since 2010",
+    x = "Reserves tat the Fed",
+    y = "S&P 500",
+    color = "Month"
+  )
+  
+  
+
+```

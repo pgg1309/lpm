@@ -1,0 +1,4177 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Dr. Paulo Gustavo Grahl, CFA" />
+
+<meta name="date" content="2022-04-11" />
+
+<title>US Elasticity Estimates</title>
+
+<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Low Pass Macro</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/pgg1309/lpm">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">US Elasticity Estimates</h1>
+<h4 class="author">Dr. Paulo Gustavo Grahl, CFA</h4>
+<h4 class="date">2022-04-11</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2022-04-28
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
+</p>
+<p>
+<strong>Knit directory:</strong> <code>lpm/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version 1.7.0). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges"> <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted changes </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguncommittedchanges" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The R Markdown is untracked by Git. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20220204code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20220204)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20220204code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20220204)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcompgg1309lpmtreef543dc9aa769c8f59b7d636184298fed143c2954targetblankf543dc9a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/pgg1309/lpm/tree/f543dc9aa769c8f59b7d636184298fed143c2954" target="_blank">f543dc9</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcompgg1309lpmtreef543dc9aa769c8f59b7d636184298fed143c2954targetblankf543dc9a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version <a href="https://github.com/pgg1309/lpm/tree/f543dc9aa769c8f59b7d636184298fed143c2954" target="_blank">f543dc9</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+
+Untracked files:
+    Untracked:  analysis/2022-04-26-us-confboard.Rmd
+    Untracked:  analysis/fed-reserves-sandp.Rmd
+    Untracked:  analysis/goods-elasticity.Rmd
+    Untracked:  analysis/old-monetary-policy-path.Rmd
+    Untracked:  analysis/us-inflation-forecast.Rmd
+    Untracked:  analysis/us-inflation-simulation.Rmd
+    Untracked:  analysis/us-treasury-flows.Rmd
+    Untracked:  code/create_futures_table.R
+    Untracked:  code/download_mspd.R
+    Untracked:  code/download_public_debt.R
+    Untracked:  code/eurodollar_eda.R
+    Untracked:  code/fed-soma2.R
+    Untracked:  code/fed_soma_holdings.R
+    Untracked:  code/myaidsConcav.R
+    Untracked:  code/plot_cpi_charts.R
+    Untracked:  code/prepare_eurodollar_data.R
+    Untracked:  code/prepare_fedfunds_data.R
+    Untracked:  data/20220216-Fed-Soma_holdings.csv
+    Untracked:  data/eurodollar.rds
+    Untracked:  data/fed-reserves-sandp/
+    Untracked:  data/fedfunds.rds
+    Untracked:  data/figure2-original-paper.png
+    Untracked:  data/goods-elasticity/
+    Untracked:  data/mspd/
+    Untracked:  data/sandp-earnings/
+    Untracked:  delmelater.Rmd
+    Untracked:  output/ed_spread_table.rds
+    Untracked:  output/fed_holdings_timeseries.png
+    Untracked:  output/fed_treasury_wam.png
+    Untracked:  output/ff_spread_table.rds
+    Untracked:  output/mspd_processed/
+    Untracked:  output/old-ff_spread_table.rds
+    Untracked:  output/treasury_maturities_annual.png
+    Untracked:  output/treasury_maturities_monthly.png
+    Untracked:  output/x_ed_spread_table.rds
+    Untracked:  output/x_ff_spread_table.rds
+    Untracked:  tmp.csv
+
+Unstaged changes:
+    Modified:   README.md
+    Modified:   analysis/index.Rmd
+    Modified:   analysis/sandp-earnings.Rmd
+    Modified:   code/README.md
+    Modified:   data/README.md
+    Modified:   lpm.Rproj
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with <code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<div id="introdução-ao-sistema-de-demanda" class="section level2">
+<h2>Introdução ao sistema de demanda</h2>
+<p>A ideia desta nota é tentar avaliar se o aumento no consumo de bens nos Estados Unidos no período pós-Covid reflete de fato o aumento de renda (efeito positivo) e o aumento de preços (efeito negativo), e tentar avaliar o que pode acontecer em 2022 e 2023.</p>
+<p>Para isso o objetivo é estimar elasticidade preço e renda da demanda por bens.</p>
+<p>Pesquisei rapidamente a literatura, e aparentemente o melhor ferramental utilizado em micro para estimar elasticidades (income e price elasticity) ainda é baseado no paper <em>An almost ideal demand system</em> publicado em 1980 pelo Angus Deaton (que ganhou o Nobel de economia em 2015). O modelo proposto por Deaton (AIDS) é uma paroximação de primeira ordem de qualquer sistema de demanda genérico, satisfaz o <a href="https://www.oxfordreference.com/view/10.1093/oi/authority.20110803095437703">axioma da escolha</a> e resolve o problema da agregação, ou seja, as propriedades dos agregados refletem as propriedades esperadas do agente maximizador de utilidade. Com isso a demanda agregada pode ser considerada como se fosse o resultado das decisões racionais de um agente (consumidor) representativo.</p>
+<p>O ponto de partida é representar as preferências via uma <em>função de custo</em>, que é obtida minimizando o gasto necessário para atingir um certo nível de utilidade.</p>
+<p><span class="math display">\[
+\ln m_t = \ln c(p_t, U_t) = \alpha_0 + \sum_i \alpha_i \ln p_{it} + \frac{1}{2}\sum_i \sum_j \gamma^*_{ij} \ln p_{it} \ln p_{jt} + U_t \beta_0 \prod_i p_{it}^{\beta_i}
+\]</span> Onde <span class="math inline">\(m_t\)</span> é o gasto total, <span class="math inline">\(P_{it}\)</span> é o preço do bem <span class="math inline">\(i\)</span> no período <span class="math inline">\(t\)</span>, <span class="math inline">\(U_t\)</span> é o nível de utilidade.</p>
+<p>As derivadas parciais da função custo em relação a preços são as funções de <a href="https://en.wikipedia.org/wiki/Hicksian_demand_function">demanda (hicksiana):</a></p>
+<p><span class="math display">\[
+x_{it}(p_t, m_t) = \frac{\partial m_t}{\partial p_i} = \frac{m_t}{p_i} \left(\alpha_i + \frac{1}{2}\sum_j \left( \gamma^*_{ij} + \gamma^*_{ji}\right) \ln p_{jt} + \beta_i U_t\beta_0 \prod_k p_{kt}^{\beta_k} \right) 
+\]</span></p>
+<p>Mas o gasto total <span class="math inline">\(\sum_i p_ix_{it}\)</span> é equivalente a <span class="math inline">\(m_t\)</span> e reescrevendo <span class="math inline">\(U_t\)</span> em função de <span class="math inline">\(p_t\)</span> e <span class="math inline">\(x_t\)</span> (utilidade indireta) obtem-se:</p>
+<p><span class="math display">\[
+x_{it}(p_t, m_t) = \frac{\partial m_t}{\partial p_i} = \frac{m_t}{p_i} \left(\alpha_i + \sum_j \gamma_{ij}  \ln p_{jt} + \beta_i \ln\left(\frac{m_t}{P_t}\right) \right) 
+\]</span></p>
+<p>onde <span class="math inline">\(P_t\)</span> é dado por:</p>
+<p><span class="math display">\[
+\ln P_t = \alpha_0 + \sum_i \alpha_i \ln p_{it} + \frac{1}{2} \sum_i \sum_j \gamma_{ij} \ln p_{it} \ln p_{jt}
+\]</span> e <span class="math inline">\(\gamma_{ij} = \frac{1}{2}\left(\gamma^*_{ij} + \gamma^*_{ji} \right)\)</span>.</p>
+<p>A equação de demanda pode ser simplificada considerand a participação de cada bem no gasto total:</p>
+<p><span class="math display">\[
+s_{it} = \frac{p_{it} . x_{it}(p_t, m_t)}{m_t} = \alpha_i + \sum_j \gamma_{ij} \ln p_{jt} + \beta_i \ln(m_t/P_t)
+\]</span></p>
+<p>Algumas restrições derivadas da maximização de utilidade do consumidor (agente representativo) impõem restrições nos coeficientes estimados. Em particular, a soma das participações tem que ser igual a 1, <span class="math inline">\(\sum_i s_{it} = 1\)</span>. Esta condição é garantida se:</p>
+<p><span class="math display">\[
+\sum_i \alpha_i = 1; \qquad \sum_i \beta_i = 0; \qquad \sum_i \gamma_{ij} = 0 \quad \forall j
+\]</span></p>
+<p>A condição para não haver ‘ilusão monetária’ (se todos os preços e renda aumentarem na mesma proporção) é garantida por:</p>
+<p><span class="math display">\[
+\sum_j \gamma_{ij} = 0 \quad \forall i
+\]</span></p>
+<p>E por fim simetria da demanda hickisiana (compensada) é garantida por <span class="math inline">\(\gamma_{ij} = \gamma_{ji} \quad \forall i,j\)</span>. As propriedades <em>aditividade</em>, <em>homogeneidade</em>, <em>negatividade de demanda compensada</em> e <em>simetria</em> são condições necessárias e suficientes para que o sistema de demanda tenha sido gerado por um consumidor que maximiza utilidade.</p>
+</div>
+<div id="dados-e-estimação" class="section level2">
+<h2>Dados e estimação</h2>
+<p>A estimação é feita com dados anuais, desde 1985, e as categorias de consumo foram divididas em: duráveis, não duráveis e serviços. Não duráveis, por sua vez, foram subdivididos em: alimentos, gasolina e outros.</p>
+<p>O gráfico abaixo mostra a participação de cada uma destas categorias no total de consumo. Serviços constituem a maior parte, seguido por duráves e outros não duráveis.</p>
+<p><img src="figure/goods-elasticity.Rmd/unnamed-chunk-1-1.png" width="864" style="display: block; margin: auto;" /></p>
+<p>Os gráficos abaixo mostram a evolução dos preços destas categorias. Fica claro o longo período de deflação em durables interrompido em 2021, bem como a aceleração na inflação de alimentos nos últimos dois anos.</p>
+<p><img src="figure/goods-elasticity.Rmd/unnamed-chunk-2-1.png" width="864" style="display: block; margin: auto;" /></p>
+<p><img src="figure/goods-elasticity.Rmd/unnamed-chunk-3-1.png" width="864" style="display: block; margin: auto;" /></p>
+<p>A estimação do sistema de demanda composto pelas categorias acima é feita substituindo a participação determinística no consumo <span class="math inline">\(s_{it}\)</span> pela participação observada <span class="math inline">\(w_{it}\)</span>. A estimação é feita usando métodos não lineares devido ao índice de preços <span class="math inline">\(P_t\)</span>.</p>
+<p><span class="math display">\[
+w_{it} = \alpha_i + \sum_j \gamma_{ij} \ln p_{jt} + \beta_i \ln(m_t/P_t) + u_{it}
+\]</span></p>
+</div>
+<div id="estimando-as-elasticidades" class="section level2">
+<h2>Estimando as elasticidades</h2>
+<p>A amostra utilizada para estimação abaixo foi 1985 a 2019. Abaixo os coeficientes estimados:</p>
+<BR>Demand analysis with the Almost Ideal Demand System (AIDS)<br>Estimation Method: ‘Iterated Linear Least Squares Estimator’ (IL) (starting with Tornqvist Index, T) Coefficients:<br>alpha_0<br>0 <br>alpha
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+alpha
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+services.share
+</td>
+<td style="text-align:right;">
+0.8207
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+durables.share
+</td>
+<td style="text-align:right;">
+-0.4186
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+corenondurable.share
+</td>
+<td style="text-align:right;">
+-0.2134
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+food.share
+</td>
+<td style="text-align:right;">
+0.6894
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+gasoline.share
+</td>
+<td style="text-align:right;">
+0.1219
+</td>
+</tr>
+</tbody>
+</table>
+beta<br>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+beta
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+services.share
+</td>
+<td style="text-align:right;">
+-0.0195
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+durables.share
+</td>
+<td style="text-align:right;">
+0.0609
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+corenondurable.share
+</td>
+<td style="text-align:right;">
+0.0370
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+food.share
+</td>
+<td style="text-align:right;">
+-0.0682
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+gasoline.share
+</td>
+<td style="text-align:right;">
+-0.0102
+</td>
+</tr>
+</tbody>
+</table>
+gamma<br>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+services.price
+</th>
+<th style="text-align:right;">
+durables.price
+</th>
+<th style="text-align:right;">
+corenondurable.price
+</th>
+<th style="text-align:right;">
+food.price
+</th>
+<th style="text-align:right;">
+gasoline.price
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+services.share
+</td>
+<td style="text-align:right;">
+0.1587
+</td>
+<td style="text-align:right;">
+-0.0285
+</td>
+<td style="text-align:right;">
+-0.0997
+</td>
+<td style="text-align:right;">
+-0.0027
+</td>
+<td style="text-align:right;">
+-0.0278
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+durables.share
+</td>
+<td style="text-align:right;">
+-0.0285
+</td>
+<td style="text-align:right;">
+0.0475
+</td>
+<td style="text-align:right;">
+-0.0249
+</td>
+<td style="text-align:right;">
+-0.0048
+</td>
+<td style="text-align:right;">
+0.0108
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+corenondurable.share
+</td>
+<td style="text-align:right;">
+-0.0997
+</td>
+<td style="text-align:right;">
+-0.0249
+</td>
+<td style="text-align:right;">
+0.0584
+</td>
+<td style="text-align:right;">
+0.0693
+</td>
+<td style="text-align:right;">
+-0.0032
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+food.share
+</td>
+<td style="text-align:right;">
+-0.0027
+</td>
+<td style="text-align:right;">
+-0.0048
+</td>
+<td style="text-align:right;">
+0.0693
+</td>
+<td style="text-align:right;">
+-0.0578
+</td>
+<td style="text-align:right;">
+-0.0039
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+gasoline.share
+</td>
+<td style="text-align:right;">
+-0.0278
+</td>
+<td style="text-align:right;">
+0.0108
+</td>
+<td style="text-align:right;">
+-0.0032
+</td>
+<td style="text-align:right;">
+-0.0039
+</td>
+<td style="text-align:right;">
+0.0241
+</td>
+</tr>
+</tbody>
+</table>
+<div id="aditividade-homogeneidade-e-simetria" class="section level3">
+<h3>Aditividade, homogeneidade e simetria</h3>
+<p>Aditividade:</p>
+<pre class="r"><code>sum(coef(aids.result)$alpha)</code></pre>
+<pre><code>[1] 1</code></pre>
+<pre class="r"><code>sum(coef(aids.result)$beta)</code></pre>
+<pre><code>[1] 0</code></pre>
+<pre class="r"><code>colSums(coef(aids.result)$gamma)</code></pre>
+<pre><code>      services.price       durables.price corenondurable.price 
+       -9.540979e-18         0.000000e+00        -6.938894e-18 
+          food.price       gasoline.price 
+       -3.903128e-18         4.336809e-18 </code></pre>
+<p>Homogeneidade:</p>
+<pre class="r"><code>rowSums(coef(aids.result)$gamma) </code></pre>
+<pre><code>      services.share       durables.share corenondurable.share 
+       -1.655403e-14        -6.710778e-15        -2.818926e-15 
+          food.share       gasoline.share 
+       -6.938894e-18         2.607463e-14 </code></pre>
+<p>Simetria:</p>
+<pre class="r"><code>isSymmetric(coef(aids.result)$gamma, tol = 1e-10, check.attributes = FALSE)</code></pre>
+<pre><code>[1] TRUE</code></pre>
+<p>Monotonicidade (negatividade de demanda compensada):</p>
+<pre class="r"><code>aidsMono(price.names, &quot;expenditure&quot;, coef = coef(aids.result), data = db.test)</code></pre>
+<pre><code>
+Checking the monotonicity condition of an Almost Ideal Demand System (AIDS):
+Monotonicity is fulfilled at 35 out of 35 observations (100%)</code></pre>
+<p>Ou seja, o sistema estimado satisfaz as condições necessárias e suficientes para que tenha sido gerado por um agente representativo maximizador de utilidade.</p>
+</div>
+</div>
+<div id="elasticidades" class="section level2">
+<h2>Elasticidades</h2>
+<p>As definições das elasticidades estão abaixo. A elesticidade renda (gasto) é dada por:</p>
+<p><span class="math display">\[
+\eta_i = \frac{\partial x_i}{\partial m} \frac{m}{x_i}
+\]</span></p>
+<p>Marshallian (uncompensated) price elasticity:</p>
+<p><span class="math display">\[
+\Theta_{ij} = \frac{\partial x_i}{\partial p_j} \frac{p_j}{x_i}
+\]</span></p>
+<p>Hicksian (compensated) price elasticity:</p>
+<p><span class="math display">\[
+\Theta^*_{ij} = \Theta_{ij} + \eta_i * s_j
+\]</span></p>
+<p>Abaixo as eleasticidades estimadas a preço e quantidade de 2019.</p>
+Demand Elasticities (original AIDS formulas) Expenditure Elasticities
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+elasticity
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+q_services.share
+</td>
+<td style="text-align:right;">
+0.97
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_durables.share
+</td>
+<td style="text-align:right;">
+1.58
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_corenondurable.share
+</td>
+<td style="text-align:right;">
+1.33
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_food.share
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_gasoline.share
+</td>
+<td style="text-align:right;">
+0.56
+</td>
+</tr>
+</tbody>
+</table>
+Marshallian (uncompensated) Price Elasticities
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+services.price
+</th>
+<th style="text-align:right;">
+durables.price
+</th>
+<th style="text-align:right;">
+corenondurable.price
+</th>
+<th style="text-align:right;">
+food.price
+</th>
+<th style="text-align:right;">
+gasoline.price
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+q_services.share
+</td>
+<td style="text-align:right;">
+-0.75
+</td>
+<td style="text-align:right;">
+-0.05
+</td>
+<td style="text-align:right;">
+-0.15
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_durables.share
+</td>
+<td style="text-align:right;">
+-0.78
+</td>
+<td style="text-align:right;">
+-0.29
+</td>
+<td style="text-align:right;">
+-0.11
+</td>
+<td style="text-align:right;">
+-0.44
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_corenondurable.share
+</td>
+<td style="text-align:right;">
+-1.19
+</td>
+<td style="text-align:right;">
+-0.08
+</td>
+<td style="text-align:right;">
+-0.40
+</td>
+<td style="text-align:right;">
+0.40
+</td>
+<td style="text-align:right;">
+-0.07
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_food.share
+</td>
+<td style="text-align:right;">
+0.79
+</td>
+<td style="text-align:right;">
+-0.49
+</td>
+<td style="text-align:right;">
+0.76
+</td>
+<td style="text-align:right;">
+-1.16
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_gasoline.share
+</td>
+<td style="text-align:right;">
+-0.81
+</td>
+<td style="text-align:right;">
+0.27
+</td>
+<td style="text-align:right;">
+-0.23
+</td>
+<td style="text-align:right;">
+0.13
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+</tr>
+</tbody>
+</table>
+Hicksian (compensated) Price Elasticities
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+services.price
+</th>
+<th style="text-align:right;">
+durables.price
+</th>
+<th style="text-align:right;">
+corenondurable.price
+</th>
+<th style="text-align:right;">
+food.price
+</th>
+<th style="text-align:right;">
+gasoline.price
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+q_services.share
+</td>
+<td style="text-align:right;">
+-0.08
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+<td style="text-align:right;">
+-0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_durables.share
+</td>
+<td style="text-align:right;">
+0.31
+</td>
+<td style="text-align:right;">
+-0.12
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+<td style="text-align:right;">
+-0.33
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_corenondurable.share
+</td>
+<td style="text-align:right;">
+-0.27
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+-0.25
+</td>
+<td style="text-align:right;">
+0.49
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_food.share
+</td>
+<td style="text-align:right;">
+0.82
+</td>
+<td style="text-align:right;">
+-0.49
+</td>
+<td style="text-align:right;">
+0.76
+</td>
+<td style="text-align:right;">
+-1.16
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_gasoline.share
+</td>
+<td style="text-align:right;">
+-0.42
+</td>
+<td style="text-align:right;">
+0.33
+</td>
+<td style="text-align:right;">
+-0.17
+</td>
+<td style="text-align:right;">
+0.17
+</td>
+<td style="text-align:right;">
+0.09
+</td>
+</tr>
+</tbody>
+</table>
+<p>E a tabela abaixo mostra quais elasticidades são estatisticamente diferentes de zero:</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+Estimate
+</th>
+<th style="text-align:right;">
+Std. Error
+</th>
+<th style="text-align:right;">
+t value
+</th>
+<th style="text-align:right;">
+Pr(&gt;|t|)
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Ex q_services.share
+</td>
+<td style="text-align:right;">
+0.97
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+23.97
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Ex q_durables.share
+</td>
+<td style="text-align:right;">
+1.58
+</td>
+<td style="text-align:right;">
+0.21
+</td>
+<td style="text-align:right;">
+7.44
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Ex q_corenondurable.share
+</td>
+<td style="text-align:right;">
+1.33
+</td>
+<td style="text-align:right;">
+0.11
+</td>
+<td style="text-align:right;">
+12.42
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Ex q_gasoline.share
+</td>
+<td style="text-align:right;">
+0.56
+</td>
+<td style="text-align:right;">
+0.24
+</td>
+<td style="text-align:right;">
+2.35
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_services.share durables.price
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+<td style="text-align:right;">
+2.00
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_services.share food.price
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+1.89
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_durables.share services.price
+</td>
+<td style="text-align:right;">
+0.31
+</td>
+<td style="text-align:right;">
+0.16
+</td>
+<td style="text-align:right;">
+1.96
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_durables.share corenondurable.price
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+1.73
+</td>
+<td style="text-align:right;">
+0.09
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_durables.share food.price
+</td>
+<td style="text-align:right;">
+-0.33
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+-7.73
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_corenondurable.share durables.price
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+1.77
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_corenondurable.share corenondurable.price
+</td>
+<td style="text-align:right;">
+-0.25
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+-1.75
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_corenondurable.share food.price
+</td>
+<td style="text-align:right;">
+0.49
+</td>
+<td style="text-align:right;">
+0.18
+</td>
+<td style="text-align:right;">
+2.70
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_corenondurable.share gasoline.price
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+<td style="text-align:right;">
+-2.43
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_food.share services.price
+</td>
+<td style="text-align:right;">
+0.82
+</td>
+<td style="text-align:right;">
+0.43
+</td>
+<td style="text-align:right;">
+1.91
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_food.share durables.price
+</td>
+<td style="text-align:right;">
+-0.49
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+-7.90
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_food.share corenondurable.price
+</td>
+<td style="text-align:right;">
+0.76
+</td>
+<td style="text-align:right;">
+0.28
+</td>
+<td style="text-align:right;">
+2.69
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_food.share food.price
+</td>
+<td style="text-align:right;">
+-1.16
+</td>
+<td style="text-align:right;">
+0.47
+</td>
+<td style="text-align:right;">
+-2.47
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_food.share gasoline.price
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+<td style="text-align:right;">
+2.24
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_gasoline.share corenondurable.price
+</td>
+<td style="text-align:right;">
+-0.17
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+<td style="text-align:right;">
+-2.40
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_gasoline.share food.price
+</td>
+<td style="text-align:right;">
+0.17
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+<td style="text-align:right;">
+2.24
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_services.share services.price
+</td>
+<td style="text-align:right;">
+-0.75
+</td>
+<td style="text-align:right;">
+0.09
+</td>
+<td style="text-align:right;">
+-8.70
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_services.share durables.price
+</td>
+<td style="text-align:right;">
+-0.05
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+<td style="text-align:right;">
+-2.53
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_services.share corenondurable.price
+</td>
+<td style="text-align:right;">
+-0.15
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+<td style="text-align:right;">
+-4.41
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_services.share gasoline.price
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+<td style="text-align:right;">
+-3.46
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_durables.share services.price
+</td>
+<td style="text-align:right;">
+-0.78
+</td>
+<td style="text-align:right;">
+0.30
+</td>
+<td style="text-align:right;">
+-2.61
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_durables.share durables.price
+</td>
+<td style="text-align:right;">
+-0.29
+</td>
+<td style="text-align:right;">
+0.13
+</td>
+<td style="text-align:right;">
+-2.21
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_durables.share corenondurable.price
+</td>
+<td style="text-align:right;">
+-0.11
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+<td style="text-align:right;">
+-2.39
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_durables.share food.price
+</td>
+<td style="text-align:right;">
+-0.44
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+<td style="text-align:right;">
+-9.19
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_corenondurable.share services.price
+</td>
+<td style="text-align:right;">
+-1.19
+</td>
+<td style="text-align:right;">
+0.30
+</td>
+<td style="text-align:right;">
+-4.01
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_corenondurable.share durables.price
+</td>
+<td style="text-align:right;">
+-0.08
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+<td style="text-align:right;">
+-2.19
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_corenondurable.share corenondurable.price
+</td>
+<td style="text-align:right;">
+-0.40
+</td>
+<td style="text-align:right;">
+0.13
+</td>
+<td style="text-align:right;">
+-2.96
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_corenondurable.share food.price
+</td>
+<td style="text-align:right;">
+0.40
+</td>
+<td style="text-align:right;">
+0.18
+</td>
+<td style="text-align:right;">
+2.22
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_corenondurable.share gasoline.price
+</td>
+<td style="text-align:right;">
+-0.07
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+<td style="text-align:right;">
+-4.62
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_food.share durables.price
+</td>
+<td style="text-align:right;">
+-0.49
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+-7.87
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_food.share corenondurable.price
+</td>
+<td style="text-align:right;">
+0.76
+</td>
+<td style="text-align:right;">
+0.27
+</td>
+<td style="text-align:right;">
+2.77
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_food.share food.price
+</td>
+<td style="text-align:right;">
+-1.16
+</td>
+<td style="text-align:right;">
+0.46
+</td>
+<td style="text-align:right;">
+-2.50
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_food.share gasoline.price
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+<td style="text-align:right;">
+2.14
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_gasoline.share services.price
+</td>
+<td style="text-align:right;">
+-0.81
+</td>
+<td style="text-align:right;">
+0.48
+</td>
+<td style="text-align:right;">
+-1.67
+</td>
+<td style="text-align:right;">
+0.10
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_gasoline.share corenondurable.price
+</td>
+<td style="text-align:right;">
+-0.23
+</td>
+<td style="text-align:right;">
+0.09
+</td>
+<td style="text-align:right;">
+-2.72
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+</tbody>
+</table>
+<div id="elasticidades---comentários" class="section level3">
+<h3>Elasticidades - comentários</h3>
+<p>Elasticidade renda de todos as categorias é positiva (<em>bem normal</em>) exceto alimentos, cuja elasticidade renda é pequena (estatisticamente igual a zero). Bens duráveis e ‘core’ não duráveis são <em>bens de luxo</em> (elasticidade &gt; 1), enquanto que serviços e gasolina podem ser considerados <em>bens normais</em>.</p>
+<p>A tabela abaixo mostra a elasticidade renda:</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+income elasticity
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+q_services.share
+</td>
+<td style="text-align:right;">
+0.97
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_durables.share
+</td>
+<td style="text-align:right;">
+1.58
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_corenondurable.share
+</td>
+<td style="text-align:right;">
+1.33
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_food.share
+</td>
+<td style="text-align:right;">
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_gasoline.share
+</td>
+<td style="text-align:right;">
+0.56
+</td>
+</tr>
+</tbody>
+</table>
+<p>Nenhum dos bens analisados é <em>bem de Giffen</em>, ou seja, a demanda sempre cai com aumento do próprio preço. Desta vez gasoline é a exceção, com elasticidade preço zero.</p>
+<p>Elasticidade preço para serviços (-0.7), duráveis (-0.3) e core não duráveis (-0.4) são maiores que -1, considerados <em>inelásticos a preço</em>. Alimentos (-1.2) são <em>elásticos a preço</em>. E gasolina tem elasticidade estatisticamente igual a zero (+0.1).</p>
+<p>A tabela abaixo mostra a elasticidade preço (próprio):</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+price elasticity
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+q_services.share
+</td>
+<td style="text-align:right;">
+-0.75
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_durables.share
+</td>
+<td style="text-align:right;">
+-0.29
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_corenondurable.share
+</td>
+<td style="text-align:right;">
+-0.40
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_food.share
+</td>
+<td style="text-align:right;">
+-1.16
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_gasoline.share
+</td>
+<td style="text-align:right;">
+</td>
+</tr>
+</tbody>
+</table>
+<p>Para determinar se os bens são complementares ou substitutos o correto é olhar a demanda compensada (hicksian). A tabela abaixo contem as elasticidades preço da demanda compensada (itens estatisticamente zero estão com NA).</p>
+<p>Mas os resultados obtidos são um pouco controversos. O sistema estimado implica que serviços é complementar a duráveis e alimentos. Implica também que alimentos e duráveis são bens complementares, e que gasolina e core não duráveis são complementares. Não parece fazer muito sentido.</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+services.price
+</th>
+<th style="text-align:right;">
+durables.price
+</th>
+<th style="text-align:right;">
+corenondurable.price
+</th>
+<th style="text-align:right;">
+food.price
+</th>
+<th style="text-align:right;">
+gasoline.price
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+q_services.share
+</td>
+<td style="text-align:right;">
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+<td style="text-align:right;">
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+<td style="text-align:right;">
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_durables.share
+</td>
+<td style="text-align:right;">
+0.31
+</td>
+<td style="text-align:right;">
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+<td style="text-align:right;">
+-0.33
+</td>
+<td style="text-align:right;">
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_corenondurable.share
+</td>
+<td style="text-align:right;">
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+</td>
+<td style="text-align:right;">
+0.49
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_food.share
+</td>
+<td style="text-align:right;">
+0.82
+</td>
+<td style="text-align:right;">
+-0.49
+</td>
+<td style="text-align:right;">
+0.76
+</td>
+<td style="text-align:right;">
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_gasoline.share
+</td>
+<td style="text-align:right;">
+</td>
+<td style="text-align:right;">
+</td>
+<td style="text-align:right;">
+-0.17
+</td>
+<td style="text-align:right;">
+0.17
+</td>
+<td style="text-align:right;">
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="projeções" class="section level2">
+<h2>Projeções</h2>
+<p>A tabela abaixo mostra o crescimento do gasto desde a Covid. Queda em 2020 seguida por um substancial aumento em 2021 por conta da renda disponível pelos estímulos.</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+expenditure
+</th>
+<th style="text-align:right;">
+growth
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+13239.11
+</td>
+<td style="text-align:right;">
+0.0430
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+13913.53
+</td>
+<td style="text-align:right;">
+0.0509
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+14428.68
+</td>
+<td style="text-align:right;">
+0.0370
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+14047.57
+</td>
+<td style="text-align:right;">
+-0.0264
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+15741.57
+</td>
+<td style="text-align:right;">
+0.1206
+</td>
+</tr>
+</tbody>
+</table>
+<p>Abaixo, vemos a variação de preços (inflação) das categorias:</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+durables.price
+</th>
+<th style="text-align:right;">
+food.price
+</th>
+<th style="text-align:right;">
+gasoline.price
+</th>
+<th style="text-align:right;">
+corenondurable.price
+</th>
+<th style="text-align:right;">
+services.price
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+-2.3
+</td>
+<td style="text-align:right;">
+-0.1
+</td>
+<td style="text-align:right;">
+13.0
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+<td style="text-align:right;">
+2.5
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+-1.7
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+13.7
+</td>
+<td style="text-align:right;">
+0.3
+</td>
+<td style="text-align:right;">
+2.8
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+-1.2
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:right;">
+-3.5
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:right;">
+2.4
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+-0.8
+</td>
+<td style="text-align:right;">
+3.4
+</td>
+<td style="text-align:right;">
+-15.3
+</td>
+<td style="text-align:right;">
+0.1
+</td>
+<td style="text-align:right;">
+2.1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+6.3
+</td>
+<td style="text-align:right;">
+3.1
+</td>
+<td style="text-align:right;">
+33.5
+</td>
+<td style="text-align:right;">
+0.7
+</td>
+<td style="text-align:right;">
+3.3
+</td>
+</tr>
+</tbody>
+</table>
+<p>Destaque para os preços de duráveis que aumentaram mais de 6% em 2021 e para o preço da gasolina, com queda grande em 2020 seguida por forte aumento em 2021. Alimentos também sairam um pouco do ‘padrão’ subindo mais de 3% em cada um dos últimos dois anos.</p>
+<p><em><strong>Duráveis</strong>:</em> considerando a elasticidade renda e eleasticidade preço estimadas, a quantidade consumida de duráveis deveria ter caído aproximadamente -3.9% em 2020 e subido 17.3 em 2021. Os valores observados estão na tabela abaixo.</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+q_durables
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+0.0626
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+0.0700
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+0.0426
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+0.0769
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+0.1793
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong><em>Serviços</em></strong>: já para serviços, as eleasticidades estimadas sugerem queda de -4.1% em 2020 e aumento de 9.3% em 2021. A tabela abaixo contem os valores observados. Em ambos os anos pós covid, a quantidade de serviços consumida ficou abaixo da projetada pelas elasticidades, provavelmente reflexo das restrições a mobilidade impostas pela pandemia.</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+q_services
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+0.0178
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+0.0241
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+0.0166
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+-0.0752
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+0.0578
+</td>
+</tr>
+</tbody>
+</table>
+<p>Porém, essa hipótese de restrição a mobilidade pode ser contestada se olharmos o resíduo do modelo de demanda para serviços. O gráfico abaixo deixa claro que, mesmo antes da Covid, a demanda por serviços estava sendo superestimada pelo modelo.</p>
+<p><img src="figure/goods-elasticity.Rmd/unnamed-chunk-20-1.png" width="864" style="display: block; margin: auto;" /></p>
+<p>Olhando agora os resíduos do modelo para a demanda por duráveis, notamos que houve uma consistente subestimação da demanda nos últimos anos.</p>
+<p><img src="figure/goods-elasticity.Rmd/unnamed-chunk-21-1.png" width="864" style="display: block; margin: auto;" /></p>
+<div id="projeções-completas" class="section level3">
+<h3>Projeções completas</h3>
+<p>O exercício anterior foi uma tentativa aproximada de quantificar a demanda por duráveis e serviços, uma vez que não levou em conta outros preços na economia.</p>
+<p>A tabela abaixo projeta o crescimento de quantidade esperado para os anos de 2020 e 2021 com base no modelo estimado de 1985 a 2019.</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+q_services
+</th>
+<th style="text-align:right;">
+q_durables
+</th>
+<th style="text-align:right;">
+q_corenondurable
+</th>
+<th style="text-align:right;">
+q_food
+</th>
+<th style="text-align:right;">
+q_gasoline
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+1.9
+</td>
+<td style="text-align:right;">
+6.0
+</td>
+<td style="text-align:right;">
+1.8
+</td>
+<td style="text-align:right;">
+4.5
+</td>
+<td style="text-align:right;">
+0.79
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+2.4
+</td>
+<td style="text-align:right;">
+6.6
+</td>
+<td style="text-align:right;">
+2.7
+</td>
+<td style="text-align:right;">
+3.7
+</td>
+<td style="text-align:right;">
+0.59
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+2.0
+</td>
+<td style="text-align:right;">
+3.7
+</td>
+<td style="text-align:right;">
+2.8
+</td>
+<td style="text-align:right;">
+1.3
+</td>
+<td style="text-align:right;">
+0.17
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+-3.4
+</td>
+<td style="text-align:right;">
+-8.0
+</td>
+<td style="text-align:right;">
+-3.5
+</td>
+<td style="text-align:right;">
+-2.8
+</td>
+<td style="text-align:right;">
+-5.32
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+7.5
+</td>
+<td style="text-align:right;">
+15.1
+</td>
+<td style="text-align:right;">
+10.4
+</td>
+<td style="text-align:right;">
+-1.5
+</td>
+<td style="text-align:right;">
+9.07
+</td>
+</tr>
+</tbody>
+</table>
+<p>E abaixo os valores de fato observados nestes anos:</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+q_services
+</th>
+<th style="text-align:right;">
+q_durables
+</th>
+<th style="text-align:right;">
+q_corenondurables
+</th>
+<th style="text-align:right;">
+q_food
+</th>
+<th style="text-align:right;">
+q_gasoline
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+1.8
+</td>
+<td style="text-align:right;">
+6.3
+</td>
+<td style="text-align:right;">
+3.0
+</td>
+<td style="text-align:right;">
+3.6
+</td>
+<td style="text-align:right;">
+-0.48
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+2.4
+</td>
+<td style="text-align:right;">
+7.0
+</td>
+<td style="text-align:right;">
+3.4
+</td>
+<td style="text-align:right;">
+2.3
+</td>
+<td style="text-align:right;">
+-0.57
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+1.7
+</td>
+<td style="text-align:right;">
+4.3
+</td>
+<td style="text-align:right;">
+4.1
+</td>
+<td style="text-align:right;">
+2.0
+</td>
+<td style="text-align:right;">
+-0.13
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+-7.5
+</td>
+<td style="text-align:right;">
+7.7
+</td>
+<td style="text-align:right;">
+2.9
+</td>
+<td style="text-align:right;">
+7.6
+</td>
+<td style="text-align:right;">
+-13.70
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+5.8
+</td>
+<td style="text-align:right;">
+17.9
+</td>
+<td style="text-align:right;">
+12.4
+</td>
+<td style="text-align:right;">
+4.4
+</td>
+<td style="text-align:right;">
+9.10
+</td>
+</tr>
+</tbody>
+</table>
+<p>Abaixo o residuo, a diferença entre as quantidades observadas e a projetada pelo sistema de demanda.</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+q_services
+</th>
+<th style="text-align:right;">
+q_durables
+</th>
+<th style="text-align:right;">
+q_corenondurables
+</th>
+<th style="text-align:right;">
+q_food
+</th>
+<th style="text-align:right;">
+q_gasoline
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+-0.075
+</td>
+<td style="text-align:right;">
+0.26
+</td>
+<td style="text-align:right;">
+1.15
+</td>
+<td style="text-align:right;">
+-0.92
+</td>
+<td style="text-align:right;">
+-1.270
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+0.033
+</td>
+<td style="text-align:right;">
+0.40
+</td>
+<td style="text-align:right;">
+0.69
+</td>
+<td style="text-align:right;">
+-1.39
+</td>
+<td style="text-align:right;">
+-1.163
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+-0.347
+</td>
+<td style="text-align:right;">
+0.55
+</td>
+<td style="text-align:right;">
+1.33
+</td>
+<td style="text-align:right;">
+0.74
+</td>
+<td style="text-align:right;">
+-0.302
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+-4.115
+</td>
+<td style="text-align:right;">
+15.65
+</td>
+<td style="text-align:right;">
+6.40
+</td>
+<td style="text-align:right;">
+10.38
+</td>
+<td style="text-align:right;">
+-8.378
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+-1.724
+</td>
+<td style="text-align:right;">
+2.81
+</td>
+<td style="text-align:right;">
+2.00
+</td>
+<td style="text-align:right;">
+5.89
+</td>
+<td style="text-align:right;">
+0.024
+</td>
+</tr>
+</tbody>
+</table>
+<p>Posso fazer a mesma conta com os valores monetários ao invés de quantidade, usando o valor total de gasto realmente observado. Valores abaixo em USD bn.</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+s_services
+</th>
+<th style="text-align:right;">
+s_durables
+</th>
+<th style="text-align:right;">
+s_conrenondurable
+</th>
+<th style="text-align:right;">
+s_food
+</th>
+<th style="text-align:right;">
+s_gasoline
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2016
+</td>
+<td style="text-align:right;">
+-67
+</td>
+<td style="text-align:right;">
+69
+</td>
+<td style="text-align:right;">
+-3
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+-1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+-76
+</td>
+<td style="text-align:right;">
+75
+</td>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:right;">
+-6
+</td>
+<td style="text-align:right;">
+-6
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+-77
+</td>
+<td style="text-align:right;">
+84
+</td>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+-20
+</td>
+<td style="text-align:right;">
+-11
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+-114
+</td>
+<td style="text-align:right;">
+94
+</td>
+<td style="text-align:right;">
+45
+</td>
+<td style="text-align:right;">
+-13
+</td>
+<td style="text-align:right;">
+-11
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+-531
+</td>
+<td style="text-align:right;">
+321
+</td>
+<td style="text-align:right;">
+145
+</td>
+<td style="text-align:right;">
+98
+</td>
+<td style="text-align:right;">
+-33
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+-756
+</td>
+<td style="text-align:right;">
+440
+</td>
+<td style="text-align:right;">
+195
+</td>
+<td style="text-align:right;">
+169
+</td>
+<td style="text-align:right;">
+-48
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="estimando-elasticidades-incluindo-covid" class="section level2">
+<h2>Estimando elasticidades (incluindo Covid)</h2>
+<p>Abaixo as elasticidades estimadas considerando o período todo de 1985 a 2021.</p>
+<div id="aditividade-homogeneidade-e-simetria-incluindo-covid" class="section level3">
+<h3>Aditividade, homogeneidade e simetria (incluindo Covid)</h3>
+<p>Aditividade:</p>
+<pre class="r"><code>sum(coef(aids.result.full)$alpha)</code></pre>
+<pre><code>[1] 1</code></pre>
+<pre class="r"><code>sum(coef(aids.result.full)$beta)</code></pre>
+<pre><code>[1] 0</code></pre>
+<pre class="r"><code>colSums(coef(aids.result.full)$gamma)</code></pre>
+<pre><code>      services.price       durables.price corenondurable.price 
+        6.938894e-18         8.673617e-19        -3.469447e-18 
+          food.price       gasoline.price 
+       -2.602085e-18        -1.734723e-18 </code></pre>
+<p>Homogeneidade:</p>
+<pre class="r"><code>rowSums(coef(aids.result.full)$gamma) </code></pre>
+<pre><code>      services.share       durables.share corenondurable.share 
+        4.713209e-13         1.526045e-13        -7.372575e-15 
+          food.share       gasoline.share 
+       -2.168404e-17        -6.165311e-13 </code></pre>
+<p>Simetria:</p>
+<pre class="r"><code>isSymmetric(coef(aids.result.full)$gamma, tol = 1e-10, check.attributes = FALSE)</code></pre>
+<pre><code>[1] TRUE</code></pre>
+<p>Monotonicidade (negatividade de demanda compensada):</p>
+<pre class="r"><code>aidsMono(price.names, &quot;expenditure&quot;, coef = coef(aids.result.full), data = data.frame(db))</code></pre>
+<pre><code>
+Checking the monotonicity condition of an Almost Ideal Demand System (AIDS):
+Monotonicity is fulfilled at 37 out of 37 observations (100%)</code></pre>
+<p>Ou seja, o sistema estimado satisfaz as condições necessárias e suficientes para que tenha sido gerado por um agente representativo maximizador de utilidade.</p>
+<p>Abaixo as eleasticidades estimadas a preço e quantidade de 2021.</p>
+Demand Elasticities (original AIDS formulas) Expenditure Elasticities
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+elasticity
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+q_services.share
+</td>
+<td style="text-align:right;">
+1.11
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_durables.share
+</td>
+<td style="text-align:right;">
+1.41
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_corenondurable.share
+</td>
+<td style="text-align:right;">
+0.84
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_food.share
+</td>
+<td style="text-align:right;">
+-0.18
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_gasoline.share
+</td>
+<td style="text-align:right;">
+0.37
+</td>
+</tr>
+</tbody>
+</table>
+Marshallian (uncompensated) Price Elasticities
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+services.price
+</th>
+<th style="text-align:right;">
+durables.price
+</th>
+<th style="text-align:right;">
+corenondurable.price
+</th>
+<th style="text-align:right;">
+food.price
+</th>
+<th style="text-align:right;">
+gasoline.price
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+q_services.share
+</td>
+<td style="text-align:right;">
+-1.07
+</td>
+<td style="text-align:right;">
+-0.06
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_durables.share
+</td>
+<td style="text-align:right;">
+-0.53
+</td>
+<td style="text-align:right;">
+-0.53
+</td>
+<td style="text-align:right;">
+-0.03
+</td>
+<td style="text-align:right;">
+-0.32
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_corenondurable.share
+</td>
+<td style="text-align:right;">
+0.23
+</td>
+<td style="text-align:right;">
+0.03
+</td>
+<td style="text-align:right;">
+-1.04
+</td>
+<td style="text-align:right;">
+-0.02
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_food.share
+</td>
+<td style="text-align:right;">
+1.30
+</td>
+<td style="text-align:right;">
+-0.36
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+<td style="text-align:right;">
+-0.90
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_gasoline.share
+</td>
+<td style="text-align:right;">
+-0.61
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+-0.14
+</td>
+<td style="text-align:right;">
+0.13
+</td>
+<td style="text-align:right;">
+0.10
+</td>
+</tr>
+</tbody>
+</table>
+Hicksian (compensated) Price Elasticities
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+services.price
+</th>
+<th style="text-align:right;">
+durables.price
+</th>
+<th style="text-align:right;">
+corenondurable.price
+</th>
+<th style="text-align:right;">
+food.price
+</th>
+<th style="text-align:right;">
+gasoline.price
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+q_services.share
+</td>
+<td style="text-align:right;">
+-0.35
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+-0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_durables.share
+</td>
+<td style="text-align:right;">
+0.39
+</td>
+<td style="text-align:right;">
+-0.35
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+-0.21
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_corenondurable.share
+</td>
+<td style="text-align:right;">
+0.77
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+-0.94
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+-0.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_food.share
+</td>
+<td style="text-align:right;">
+1.19
+</td>
+<td style="text-align:right;">
+-0.38
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+-0.92
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+q_gasoline.share
+</td>
+<td style="text-align:right;">
+-0.37
+</td>
+<td style="text-align:right;">
+0.19
+</td>
+<td style="text-align:right;">
+-0.09
+</td>
+<td style="text-align:right;">
+0.16
+</td>
+<td style="text-align:right;">
+0.11
+</td>
+</tr>
+</tbody>
+</table>
+<p>E a tabela abaixo mostra quais elasticidades são estatisticamente diferentes de zero:</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+Estimate
+</th>
+<th style="text-align:right;">
+Std. Error
+</th>
+<th style="text-align:right;">
+t value
+</th>
+<th style="text-align:right;">
+Pr(&gt;|t|)
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Ex q_services.share
+</td>
+<td style="text-align:right;">
+1.11
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+<td style="text-align:right;">
+15.14
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Ex q_durables.share
+</td>
+<td style="text-align:right;">
+1.41
+</td>
+<td style="text-align:right;">
+0.21
+</td>
+<td style="text-align:right;">
+6.77
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Ex q_corenondurable.share
+</td>
+<td style="text-align:right;">
+0.84
+</td>
+<td style="text-align:right;">
+0.26
+</td>
+<td style="text-align:right;">
+3.19
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_services.share services.price
+</td>
+<td style="text-align:right;">
+-0.35
+</td>
+<td style="text-align:right;">
+0.13
+</td>
+<td style="text-align:right;">
+-2.73
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_services.share durables.price
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+2.13
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_durables.share services.price
+</td>
+<td style="text-align:right;">
+0.39
+</td>
+<td style="text-align:right;">
+0.20
+</td>
+<td style="text-align:right;">
+1.94
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_durables.share durables.price
+</td>
+<td style="text-align:right;">
+-0.35
+</td>
+<td style="text-align:right;">
+0.13
+</td>
+<td style="text-align:right;">
+-2.60
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_durables.share corenondurable.price
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+3.44
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_durables.share food.price
+</td>
+<td style="text-align:right;">
+-0.21
+</td>
+<td style="text-align:right;">
+0.05
+</td>
+<td style="text-align:right;">
+-4.57
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_corenondurable.share durables.price
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+3.49
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_corenondurable.share corenondurable.price
+</td>
+<td style="text-align:right;">
+-0.94
+</td>
+<td style="text-align:right;">
+0.35
+</td>
+<td style="text-align:right;">
+-2.69
+</td>
+<td style="text-align:right;">
+0.01
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_food.share durables.price
+</td>
+<td style="text-align:right;">
+-0.38
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+<td style="text-align:right;">
+-5.11
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Eh q_gasoline.share gasoline.price
+</td>
+<td style="text-align:right;">
+0.11
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+1.75
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_services.share services.price
+</td>
+<td style="text-align:right;">
+-1.07
+</td>
+<td style="text-align:right;">
+0.17
+</td>
+<td style="text-align:right;">
+-6.39
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_services.share durables.price
+</td>
+<td style="text-align:right;">
+-0.06
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+-1.70
+</td>
+<td style="text-align:right;">
+0.09
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_services.share gasoline.price
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+<td style="text-align:right;">
+-2.35
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_durables.share durables.price
+</td>
+<td style="text-align:right;">
+-0.53
+</td>
+<td style="text-align:right;">
+0.11
+</td>
+<td style="text-align:right;">
+-4.89
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_durables.share food.price
+</td>
+<td style="text-align:right;">
+-0.32
+</td>
+<td style="text-align:right;">
+0.04
+</td>
+<td style="text-align:right;">
+-8.67
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_corenondurable.share corenondurable.price
+</td>
+<td style="text-align:right;">
+-1.04
+</td>
+<td style="text-align:right;">
+0.32
+</td>
+<td style="text-align:right;">
+-3.25
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_corenondurable.share gasoline.price
+</td>
+<td style="text-align:right;">
+-0.04
+</td>
+<td style="text-align:right;">
+0.02
+</td>
+<td style="text-align:right;">
+-1.73
+</td>
+<td style="text-align:right;">
+0.09
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_food.share durables.price
+</td>
+<td style="text-align:right;">
+-0.36
+</td>
+<td style="text-align:right;">
+0.08
+</td>
+<td style="text-align:right;">
+-4.70
+</td>
+<td style="text-align:right;">
+0.00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_gasoline.share corenondurable.price
+</td>
+<td style="text-align:right;">
+-0.14
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+<td style="text-align:right;">
+-1.85
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Em q_gasoline.share gasoline.price
+</td>
+<td style="text-align:right;">
+0.10
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+1.82
+</td>
+<td style="text-align:right;">
+0.07
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="cenário-para-2022" class="section level2">
+<h2>Cenário para 2022</h2>
+<p>Para pensar no cenário de 2022 temos que fazer hipóteses sobre (a) aumento do gasto total e (b) variação de preços.</p>
+<pre class="r"><code>db.future &lt;- db %&gt;%
+  add_case(
+    year = 2022,
+    durables.price       = tail(., 1)$durables.price      * 1,
+    food.price           = tail(.,1)$food.price           * 1.035,
+    gasoline.price       = tail(.,1)$gasoline.price       * 1,
+    corenondurable.price = tail(.,1)$corenondurable.price * 1.01,
+    services.price       = tail(.,1)$services.price       * 1.04,
+    expenditure          = tail(.,1)$expenditure          * 1.1
+  )</code></pre>
+<p>A tabela abaixo inclui a <em>projeção</em> para 2022 com base nas hipóteses acima descritas:</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+q_services
+</th>
+<th style="text-align:right;">
+q_durables
+</th>
+<th style="text-align:right;">
+q_corenondurable
+</th>
+<th style="text-align:right;">
+q_food
+</th>
+<th style="text-align:right;">
+q_gasoline
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+1.7
+</td>
+<td style="text-align:right;">
+6.0
+</td>
+<td style="text-align:right;">
+3.2
+</td>
+<td style="text-align:right;">
+4.19
+</td>
+<td style="text-align:right;">
+0.89
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+2.2
+</td>
+<td style="text-align:right;">
+6.5
+</td>
+<td style="text-align:right;">
+4.0
+</td>
+<td style="text-align:right;">
+3.57
+</td>
+<td style="text-align:right;">
+0.53
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+1.8
+</td>
+<td style="text-align:right;">
+4.1
+</td>
+<td style="text-align:right;">
+3.7
+</td>
+<td style="text-align:right;">
+1.71
+</td>
+<td style="text-align:right;">
+0.14
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+-4.3
+</td>
+<td style="text-align:right;">
+-6.4
+</td>
+<td style="text-align:right;">
+-1.3
+</td>
+<td style="text-align:right;">
+-0.13
+</td>
+<td style="text-align:right;">
+-4.18
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+8.2
+</td>
+<td style="text-align:right;">
+12.2
+</td>
+<td style="text-align:right;">
+8.9
+</td>
+<td style="text-align:right;">
+-1.85
+</td>
+<td style="text-align:right;">
+6.75
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2022
+</td>
+<td style="text-align:right;">
+6.7
+</td>
+<td style="text-align:right;">
+10.9
+</td>
+<td style="text-align:right;">
+8.0
+</td>
+<td style="text-align:right;">
+-0.51
+</td>
+<td style="text-align:right;">
+2.01
+</td>
+</tr>
+</tbody>
+</table>
+<p>Em termos consolidados, e usando o <em>share</em> estimado para cada categoria, podemos inferir qual seria o crescimento real do consumo:</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+consumption_growth
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+2.9
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+2.2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+-3.8
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+8.0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2022
+</td>
+<td style="text-align:right;">
+6.7
+</td>
+</tr>
+</tbody>
+</table>
+<p>O que implicaria, implicitamente, em um caminho para inflação como na tabela abaixo. O <em>pce</em> é calculado usando a média aritmética dos pesos de <span class="math inline">\(w_{i,t}\)</span> e <span class="math inline">\(w_{i,t-1}\)</span>.</p>
+<table class=" lightable-classic lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; ">
+<thead>
+<tr>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+pce
+</th>
+<th style="text-align:right;">
+infla
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+1.8
+</td>
+<td style="text-align:right;">
+1.8
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2018
+</td>
+<td style="text-align:right;">
+2.1
+</td>
+<td style="text-align:right;">
+2.1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2019
+</td>
+<td style="text-align:right;">
+1.5
+</td>
+<td style="text-align:right;">
+1.4
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2020
+</td>
+<td style="text-align:right;">
+1.3
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2021
+</td>
+<td style="text-align:right;">
+3.9
+</td>
+<td style="text-align:right;">
+3.1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2022
+</td>
+<td style="text-align:right;">
+3.1
+</td>
+<td style="text-align:right;">
+5.0
+</td>
+</tr>
+</tbody>
+</table>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre><code>R version 4.1.3 (2022-03-10)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19044)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] miscTools_0.6-27       micEconAids_0.6-19     micEcon_0.6-17        
+ [4] lmtest_0.9-40          zoo_1.8-10             DatastreamDSWS2R_1.8.3
+ [7] fable_0.3.1            feasts_0.2.2           fabletools_0.3.2      
+[10] tsibbledata_0.4.0      tsibble_1.1.1          ggplot2_3.3.5         
+[13] lubridate_1.8.0        tidyr_1.2.0            dplyr_1.0.8           
+[16] tibble_3.1.6           fpp3_0.4.0             workflowr_1.7.0       
+
+loaded via a namespace (and not attached):
+ [1] nlme_3.1-157         fs_1.5.2             xts_0.12.1          
+ [4] webshot_0.5.3        httr_1.4.2           rprojroot_2.0.3     
+ [7] tools_4.1.3          bslib_0.3.1          utf8_1.2.2          
+[10] R6_2.5.1             DBI_1.1.2            mgcv_1.8-40         
+[13] colorspace_2.0-3     systemfit_1.1-24     withr_2.5.0         
+[16] tidyselect_1.1.2     processx_3.5.3       compiler_4.1.3      
+[19] git2r_0.30.1         rvest_1.0.2          cli_3.3.0           
+[22] xml2_1.3.3           sandwich_3.0-1       labeling_0.4.2      
+[25] sass_0.4.1           scales_1.2.0         callr_3.7.0         
+[28] rappdirs_0.3.3       systemfonts_1.0.4    stringr_1.4.0       
+[31] digest_0.6.29        svglite_2.1.0        rmarkdown_2.14      
+[34] pkgconfig_2.0.3      htmltools_0.5.2      fastmap_1.1.0       
+[37] collapse_1.7.6       highr_0.9            rlang_1.0.2         
+[40] rstudioapi_0.13      jquerylib_0.1.4      farver_2.1.0        
+[43] generics_0.1.2       jsonlite_1.8.0       car_3.0-12          
+[46] distributional_0.3.0 magrittr_2.0.3       kableExtra_1.3.4    
+[49] Formula_1.2-4        Matrix_1.4-1         Rcpp_1.0.8.3        
+[52] munsell_0.5.0        fansi_1.0.3          abind_1.4-5         
+[55] lifecycle_1.0.1      plm_2.6-1            stringi_1.7.6       
+[58] whisker_0.4          yaml_2.3.5           carData_3.0-5       
+[61] MASS_7.3-57          grid_4.1.3           parallel_4.1.3      
+[64] promises_1.2.0.1     bdsmatrix_1.3-4      crayon_1.5.1        
+[67] lattice_0.20-45      splines_4.1.3        knitr_1.39          
+[70] anytime_0.3.9        ps_1.7.0             pillar_1.7.0        
+[73] codetools_0.2-18     glue_1.6.2           evaluate_0.15       
+[76] getPass_0.2-2        vctrs_0.4.1          httpuv_1.6.5        
+[79] Rdpack_2.3           foreach_1.5.2        gtable_0.3.0        
+[82] purrr_0.3.4          assertthat_0.2.1     xfun_0.30           
+[85] rbibutils_2.2.8      later_1.3.0          viridisLite_0.4.0   
+[88] iterators_1.0.14     maxLik_1.5-2         ellipsis_0.3.2      </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
