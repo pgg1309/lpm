@@ -921,7 +921,7 @@ db_realrate <- bind_rows(eps = eps_ftm, price = spx_price, .id = 'key') %>%
 
 
 db_realrate %>% 
-  filter_index("2012-01-01" ~ .) %>% 
+  filter_index("2015-01-01" ~ .) %>% 
   #mutate(regime = if_else(index >= "2012-01-01", 1, 0)) %>% 
   model(
     lm = TSLM(pe ~ real10y)
@@ -939,7 +939,7 @@ augment(fit_rr) %>%
   scale_colour_manual(values=c(Data="black",Fitted="#D55E00")) +
   guides(colour = guide_legend(title = NULL))
 
-fit_rr %>% gg_tsresiduals()
+#fit_rr %>% gg_tsresiduals()
 
 ```
 
