@@ -25,7 +25,7 @@ library(fpp3)
 library(DatastreamDSWS2R)
 
 ### Global variables
-update.data <- FALSE
+update.data <- TRUE
 
 ### Functions
 get_data <-
