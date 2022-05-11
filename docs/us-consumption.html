@@ -9,11 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="pgg1309" />
+<meta name="author" content="Dr. Paulo Gustavo Grahl, CFA" />
 
-<meta name="date" content="2022-05-11" />
+<meta name="date" content="2022-05-09" />
 
-<title>sandp-earnings</title>
+<title>Us Consumption EDA</title>
 
 <script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -37,6 +37,10 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+<link href="site_libs/bsTable-3.3.7/bootstrapTable.min.css" rel="stylesheet" />
+<script src="site_libs/bsTable-3.3.7/bootstrapTable.js"></script>
 <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 
@@ -362,9 +366,9 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">sandp-earnings</h1>
-<h4 class="author">pgg1309</h4>
-<h4 class="date">2022-05-11</h4>
+<h1 class="title toc-ignore">Us Consumption EDA</h1>
+<h4 class="author">Dr. Paulo Gustavo Grahl, CFA</h4>
+<h4 class="date">2022-05-09</h4>
 
 </div>
 
@@ -393,7 +397,7 @@ aria-hidden="true"></span> </a>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2022-05-11
+<strong>Last updated:</strong> 2022-05-09
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -431,10 +435,10 @@ changes </a>
 <div id="strongRMarkdownfilestronguncommittedchanges"
 class="panel-collapse collapse">
 <div class="panel-body">
-<p>The R Markdown file has unstaged changes. To know which version of
-the R Markdown file created these results, you’ll want to first commit
-it to the Git repo. If you’re still working on the analysis, you can
-ignore this warning. When you’re finished, you can run
+<p>The R Markdown is untracked by Git. To know which version of the R
+Markdown file created these results, you’ll want to first commit it to
+the Git repo. If you’re still working on the analysis, you can ignore
+this warning. When you’re finished, you can run
 <code>wflow_publish</code> to commit the R Markdown file and build the
 HTML.</p>
 </div>
@@ -567,7 +571,6 @@ Untracked files:
     Untracked:  PROJECT_NOTES.md
     Untracked:  analysis/us-consumption.Rmd
     Untracked:  analysis/us-taylor-rule.Rmd
-    Untracked:  data/sandp-earnings/USCONPRCE-X.rds
     Untracked:  data/us-taylor-rule/
     Untracked:  output/goods-elasticity/36225_tb1872c.pdf
 
@@ -575,7 +578,6 @@ Unstaged changes:
     Modified:   README.md
     Deleted:    Rplot.png
     Modified:   analysis/index.Rmd
-    Modified:   analysis/sandp-earnings.Rmd
     Modified:   data/sandp-earnings/SPCOMP-IDV.rds
     Modified:   data/sandp-earnings/TRUSI10-RY.rds
     Modified:   data/sandp-earnings/USGDPB-X.rds
@@ -608,145 +610,755 @@ There are no past versions. Publish this analysis with
 </div>
 </div>
 </div>
-<div id="introduction" class="section level1">
-<h1>Introduction</h1>
-<div id="total-earnings" class="section level2">
-<h2>Total earnings</h2>
-<p>The chart below plots total S&amp;P earnings since 1985 in nominal
-USD.</p>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-2-1.png" width="864" style="display: block; margin: auto;" /></p>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>O objetivo desta análise é verificar quais itens da cesta de consumo
+estão muito fora da tendência pré-covid.</p>
+A tabela abaixo mostra os principais ítens consumidos nos últimos 12
+meses para duráveis:
+<table class=" lightable-classic" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+LineDescription
+</th>
+<th style="text-align:right;">
+value
+</th>
+<th style="text-align:right;">
+share
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+New light trucks
+</td>
+<td style="text-align:right;">
+$307,211
+</td>
+<td style="text-align:right;">
+2.0
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Used light trucks
+</td>
+<td style="text-align:right;">
+$197,420
+</td>
+<td style="text-align:right;">
+1.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Furniture
+</td>
+<td style="text-align:right;">
+$181,614
+</td>
+<td style="text-align:right;">
+1.2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Computer software and accessories
+</td>
+<td style="text-align:right;">
+$135,129
+</td>
+<td style="text-align:right;">
+0.9
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Sporting equipment, supplies, guns, and ammunition (part of 80)
+</td>
+<td style="text-align:right;">
+$114,400
+</td>
+<td style="text-align:right;">
+0.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Jewelry
+</td>
+<td style="text-align:right;">
+$98,610
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Motor vehicle parts and accessories (58)
+</td>
+<td style="text-align:right;">
+$97,610
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Personal computers/tablets and peripheral equipment
+</td>
+<td style="text-align:right;">
+$74,771
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Major household appliances
+</td>
+<td style="text-align:right;">
+$64,064
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Clocks, lamps, lighting fixtures, and other household decorative items
+</td>
+<td style="text-align:right;">
+$58,305
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Used autos
+</td>
+<td style="text-align:right;">
+$53,260
+</td>
+<td style="text-align:right;">
+0.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Other recreational vehicles
+</td>
+<td style="text-align:right;">
+$48,134
+</td>
+<td style="text-align:right;">
+0.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Corrective eyeglasses and contact lenses
+</td>
+<td style="text-align:right;">
+$44,365
+</td>
+<td style="text-align:right;">
+0.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Televisions
+</td>
+<td style="text-align:right;">
+$43,834
+</td>
+<td style="text-align:right;">
+0.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+New domestic autos
+</td>
+<td style="text-align:right;">
+$43,272
+</td>
+<td style="text-align:right;">
+0.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Luggage and similar personal items (part of 119)
+</td>
+<td style="text-align:right;">
+$40,527
+</td>
+<td style="text-align:right;">
+0.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Therapeutic medical equipment
+</td>
+<td style="text-align:right;">
+$39,268
+</td>
+<td style="text-align:right;">
+0.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Tools, hardware, and supplies
+</td>
+<td style="text-align:right;">
+$37,710
+</td>
+<td style="text-align:right;">
+0.2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Audio equipment
+</td>
+<td style="text-align:right;">
+$36,156
+</td>
+<td style="text-align:right;">
+0.2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Carpets and other floor coverings
+</td>
+<td style="text-align:right;">
+$32,563
+</td>
+<td style="text-align:right;">
+0.2
+</td>
+</tr>
+</tbody>
+</table>
+A tabela abaixo mostra os principais ítens consumidos nos últimos 12
+meses para não-duráveis:
+<table class=" lightable-classic" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+LineDescription
+</th>
+<th style="text-align:right;">
+value
+</th>
+<th style="text-align:right;">
+share
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Prescription drugs
+</td>
+<td style="text-align:right;">
+$505,842
+</td>
+<td style="text-align:right;">
+3.2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Motor vehicle fuels, lubricants, and fluids (59)
+</td>
+<td style="text-align:right;">
+$372,293
+</td>
+<td style="text-align:right;">
+2.4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Women’s and girls’ clothing (10)
+</td>
+<td style="text-align:right;">
+$222,275
+</td>
+<td style="text-align:right;">
+1.4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Food products, not elsewhere classified
+</td>
+<td style="text-align:right;">
+$194,120
+</td>
+<td style="text-align:right;">
+1.2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Men’s and boys’ clothing (11)
+</td>
+<td style="text-align:right;">
+$128,639
+</td>
+<td style="text-align:right;">
+0.8
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Bakery products
+</td>
+<td style="text-align:right;">
+$112,736
+</td>
+<td style="text-align:right;">
+0.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Tobacco (127)
+</td>
+<td style="text-align:right;">
+$108,434
+</td>
+<td style="text-align:right;">
+0.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Shoes and other footwear
+</td>
+<td style="text-align:right;">
+$102,506
+</td>
+<td style="text-align:right;">
+0.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Mineral waters, soft drinks, and vegetable juices
+</td>
+<td style="text-align:right;">
+$100,245
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Games, toys, and hobbies
+</td>
+<td style="text-align:right;">
+$92,649
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Nonprescription drugs
+</td>
+<td style="text-align:right;">
+$91,146
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Hair, dental, shaving, and miscellaneous personal care products except
+electrical products
+</td>
+<td style="text-align:right;">
+$91,001
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Pets and related products
+</td>
+<td style="text-align:right;">
+$88,982
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Beer
+</td>
+<td style="text-align:right;">
+$84,382
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Newspapers and periodicals
+</td>
+<td style="text-align:right;">
+$76,585
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Poultry
+</td>
+<td style="text-align:right;">
+$72,298
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Cereals
+</td>
+<td style="text-align:right;">
+$67,053
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Cosmetic / perfumes / bath / nail preparations and implements
+</td>
+<td style="text-align:right;">
+$64,350
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Processed dairy products
+</td>
+<td style="text-align:right;">
+$61,119
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Beef and veal
+</td>
+<td style="text-align:right;">
+$61,082
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+</tr>
+</tbody>
+</table>
+A tabela abaixo mostra os principais ítens consumidos nos últimos 12
+meses para serviços:
+<table class=" lightable-classic" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+LineDescription
+</th>
+<th style="text-align:right;">
+value
+</th>
+<th style="text-align:right;">
+share
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Imputed rental of owner-occupied nonfarm housing (21)
+</td>
+<td style="text-align:right;">
+$1,823,930
+</td>
+<td style="text-align:right;">
+11.6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Nonprofit hospitals’ services to households
+</td>
+<td style="text-align:right;">
+$831,445
+</td>
+<td style="text-align:right;">
+5.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Physician services (44)
+</td>
+<td style="text-align:right;">
+$609,546
+</td>
+<td style="text-align:right;">
+3.9
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Rental of tenant-occupied nonfarm housing (20)
+</td>
+<td style="text-align:right;">
+$583,152
+</td>
+<td style="text-align:right;">
+3.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Meals at limited service eating places
+</td>
+<td style="text-align:right;">
+$422,239
+</td>
+<td style="text-align:right;">
+2.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Meals at other eating places
+</td>
+<td style="text-align:right;">
+$367,337
+</td>
+<td style="text-align:right;">
+2.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Net health insurance (112)
+</td>
+<td style="text-align:right;">
+$267,471
+</td>
+<td style="text-align:right;">
+1.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Other professional medical services
+</td>
+<td style="text-align:right;">
+$265,728
+</td>
+<td style="text-align:right;">
+1.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Portfolio management and investment advice services
+</td>
+<td style="text-align:right;">
+$259,978
+</td>
+<td style="text-align:right;">
+1.7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Government hospitals
+</td>
+<td style="text-align:right;">
+$239,111
+</td>
+<td style="text-align:right;">
+1.5
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Electricity (27)
+</td>
+<td style="text-align:right;">
+$206,261
+</td>
+<td style="text-align:right;">
+1.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Motor vehicle maintenance and repair (60)
+</td>
+<td style="text-align:right;">
+$202,660
+</td>
+<td style="text-align:right;">
+1.3
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Other depository institutions and regulated investment companies
+</td>
+<td style="text-align:right;">
+$167,228
+</td>
+<td style="text-align:right;">
+1.1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Commercial banks
+</td>
+<td style="text-align:right;">
+$165,330
+</td>
+<td style="text-align:right;">
+1.1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Proprietary hospitals
+</td>
+<td style="text-align:right;">
+$144,678
+</td>
+<td style="text-align:right;">
+0.9
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Cellular telephone services
+</td>
+<td style="text-align:right;">
+$143,028
+</td>
+<td style="text-align:right;">
+0.9
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Home health care
+</td>
+<td style="text-align:right;">
+$138,028
+</td>
+<td style="text-align:right;">
+0.9
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Alcohol in purchased meals
+</td>
+<td style="text-align:right;">
+$130,392
+</td>
+<td style="text-align:right;">
+0.8
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Dental services (45)
+</td>
+<td style="text-align:right;">
+$130,321
+</td>
+<td style="text-align:right;">
+0.8
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Proprietary and government nursing homes
+</td>
+<td style="text-align:right;">
+$127,298
+</td>
+<td style="text-align:right;">
+0.8
+</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div id="total-real-earnings" class="section level2">
-<h2>Total ‘real’ earnings</h2>
-<p>The chart below plots total S&amp;P earnings since 1985 deflated by
-US CPI
-<img src="figure/sandp-earnings.Rmd/unnamed-chunk-3-1.png" width="864" style="display: block; margin: auto;" /></p>
+<div id="correlação-entre-os-itens-de-consumo" class="section level2">
+<h2>Correlação entre os itens de consumo</h2>
+<p>O gráfico abaixo mostra qual o percentual da variância do consumo
+mensal explicado pelo primeiro componente principal dos 194 itens de
+consumo. A dinâmica do consumo ainda está claramente ‘anormal’.</p>
+<p><img src="figure/us-consumption.Rmd/unnamed-chunk-7-1.png" width="1152" style="display: block; margin: auto;" /></p>
 </div>
-<div id="real-earnings-growth-and-gap" class="section level2">
-<h2>Real earnings growth and ‘gap’</h2>
-<p>O gráfico abaixo mostra que o lucro do S&amp;P em termos reais
-cresceu em média no período 4.8% ao ano.</p>
-<p>O gráfico abaixo mostra o desvio do EPS dessa tendência (‘gap’) de
-forma que é possível vislumbrar qual o ‘drawdown’ do lucro real ao longo
-dos ciclos.</p>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-4-1.png" width="864" style="display: block; margin: auto;" /></p>
+<div id="consumo" class="section level2">
+<h2>Consumo</h2>
+<p>Abaixo o consumo real (quantidade) dos itens mais consumidos em cada
+uma das categorias: duráveis, não-duráveis e serviços.</p>
+<div id="duráveis" class="section level3">
+<h3>Duráveis</h3>
+<p><img src="figure/us-consumption.Rmd/unnamed-chunk-8-1.png" width="1152" style="display: block; margin: auto;" /></p>
 </div>
-<div id="earnings-vs-gdp" class="section level2">
-<h2>Earnings vs GDP</h2>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-5-1.png" width="864" style="display: block; margin: auto;" /></p>
+<div id="não-duráveis" class="section level3">
+<h3>Não duráveis</h3>
+<p><img src="figure/us-consumption.Rmd/unnamed-chunk-9-1.png" width="1152" style="display: block; margin: auto;" /></p>
 </div>
-<div id="total-sales" class="section level2">
-<h2>Total sales</h2>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-6-1.png" width="864" style="display: block; margin: auto;" /></p>
-</div>
-<div id="sales-vs-gdp" class="section level2">
-<h2>Sales vs GDP</h2>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-7-1.png" width="864" style="display: block; margin: auto;" /></p>
-</div>
-<div id="margin" class="section level2">
-<h2>Margin</h2>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-8-1.png" width="864" style="display: block; margin: auto;" /></p>
+<div id="serviços" class="section level3">
+<h3>Serviços</h3>
+<p><img src="figure/us-consumption.Rmd/unnamed-chunk-10-1.png" width="1152" style="display: block; margin: auto;" /></p>
 </div>
 </div>
-<div id="model" class="section level1">
-<h1>Model</h1>
-<div id="earnings-growth" class="section level2">
-<h2>Earnings growth</h2>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-9-1.png" width="864" style="display: block; margin: auto;" /></p>
-</div>
-<div id="earnings-next-year-always-up" class="section level2">
-<h2>Earnings next year always up</h2>
-<p>The chart below shows that forecast earnings are almost always higher
-than observed earnings in the last 12 months.</p>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-10-1.png" width="864" style="display: block; margin: auto;" /></p>
-</div>
-<div id="drawdown" class="section level2">
-<h2>Drawdown</h2>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-11-1.png" width="864" style="display: block; margin: auto;" /></p>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-12-1.png" width="864" style="display: block; margin: auto;" /></p>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-13-1.png" width="864" style="display: block; margin: auto;" /></p>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-14-1.png" width="864" style="display: block; margin: auto;" /></p>
-<p>Forward PE is always a bit below trailing PE – which is another way
-of saying that expected earnings in the next 12 months are always above
-trailing 12 months earnings.</p>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-15-1.png" width="768" style="display: block; margin: auto;" /></p>
-</div>
-<div id="model-for-future-earnings" class="section level2">
-<h2>Model for future earnings</h2>
-<div id="nominal-gdp" class="section level3">
-<h3>Nominal GDP</h3>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-16-1.png" width="864" style="display: block; margin: auto;" /></p>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-17-1.png" width="864" style="display: block; margin: auto;" />
-The table below shows the implied nominal growth in GDP for the 80%
-forecast range.</p>
-<pre><code># A tsibble: 1 x 4 [1Q]
-    index   p10 .mean   p90
-    &lt;qtr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-1 2023 Q4 -4.81  7.41  20.2</code></pre>
-</div>
-<div id="sales-to-gdp" class="section level3">
-<h3>Sales to GDP</h3>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-19-1.png" width="864" style="display: block; margin: auto;" /></p>
-<pre><code># A tsibble: 1 x 4 [1M]
-     index   p20 .mean   p80
-     &lt;mth&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-1 2023 Apr 0.471 0.535 0.600</code></pre>
-</div>
-<div id="margin-1" class="section level3">
-<h3>Margin</h3>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-21-1.png" width="864" style="display: block; margin: auto;" /></p>
-<pre><code># A tsibble: 1 x 4 [1M]
-     index    p20 .mean   p80
-     &lt;mth&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-1 2023 Apr 0.0980 0.117 0.135</code></pre>
-</div>
-<div id="pe" class="section level3">
-<h3>PE</h3>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-23-1.png" width="864" style="display: block; margin: auto;" /></p>
-<pre><code># A tsibble: 1 x 4 [1M]
-     index   p20 .mean   p80
-     &lt;mth&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-1 2023 Apr  13.5  16.8  20.1</code></pre>
-</div>
-<div id="assumptions" class="section level3">
-<h3>Assumptions</h3>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-25-1.png" width="864" style="display: block; margin: auto;" /></p>
-<pre><code># A tibble: 81 × 6
-   gdp[,1] sales[,1] margin[,1] pe[,1] eps[,1] spx[,1]
-     &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
- 1  27234.     0.600      0.135   13.5    261.   3519.
- 2  27234.     0.600      0.135   16.8    261.   4386.
- 3  27234.     0.600      0.135   20.1    261.   5253.
- 4  25330.     0.600      0.135   13.5    243.   3273.
- 5  25330.     0.600      0.135   16.8    243.   4079.
- 6  25330.     0.600      0.135   20.1    243.   4886.
- 7  27234.     0.535      0.135   13.5    233.   3142.
- 8  27234.     0.535      0.135   16.8    233.   3916.
- 9  27234.     0.535      0.135   20.1    233.   4690.
-10  27234.     0.600      0.117   13.5    225.   3036.
-# … with 71 more rows</code></pre>
-</div>
-</div>
-<div id="pe-vs-real-rates" class="section level2">
-<h2>PE vs real rates</h2>
-<pre><code>Series: pe 
-Model: TSLM 
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
--5.0013 -0.7058  0.1073  0.7189  2.5206 
-
-Coefficients:
-            Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept) 18.36158    0.02356  779.48   &lt;2e-16 ***
-real10y     -2.98939    0.03656  -81.77   &lt;2e-16 ***
----
-Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-
-Residual standard error: 1.022 on 1918 degrees of freedom
-Multiple R-squared: 0.7771, Adjusted R-squared: 0.777
-F-statistic:  6686 on 1 and 1918 DF, p-value: &lt; 2.22e-16</code></pre>
-<p><img src="figure/sandp-earnings.Rmd/unnamed-chunk-27-1.png" width="864" style="display: block; margin: auto;" /></p>
+<div id="gap" class="section level2">
+<h2>Gap</h2>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -772,40 +1384,34 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] DatastreamDSWS2R_1.8.2 fable_0.3.1            feasts_0.2.2          
- [4] fabletools_0.3.2       tsibbledata_0.4.0      tsibble_1.1.1         
- [7] ggplot2_3.3.6          lubridate_1.8.0        tidyr_1.2.0           
-[10] dplyr_1.0.9            tibble_3.1.7           fpp3_0.4.0            
-[13] workflowr_1.7.0       
+ [1] patchwork_1.1.1 forcats_0.5.1   stringr_1.4.0   dplyr_1.0.9    
+ [5] purrr_0.3.4     readr_2.1.2     tidyr_1.2.0     tibble_3.1.7   
+ [9] ggplot2_3.3.6   tidyverse_1.3.1 zoo_1.8-10      workflowr_1.7.0
 
 loaded via a namespace (and not attached):
- [1] httr_1.4.3           sass_0.4.1           jsonlite_1.8.0      
- [4] splines_4.2.0        foreach_1.5.2        warp_0.2.0          
- [7] bslib_0.3.1          assertthat_0.2.1     getPass_0.2-2       
-[10] distributional_0.3.0 highr_0.9            yaml_2.3.5          
-[13] numDeriv_2016.8-1.1  pillar_1.7.0         lattice_0.20-45     
-[16] glue_1.6.2           digest_0.6.29        promises_1.2.0.1    
-[19] colorspace_2.0-3     Matrix_1.4-1         htmltools_0.5.2     
-[22] httpuv_1.6.5         pkgconfig_2.0.3      purrr_0.3.4         
-[25] scales_1.2.0         processx_3.5.3       slider_0.2.2        
-[28] whisker_0.4          later_1.3.0          git2r_0.30.1        
-[31] mgcv_1.8-40          generics_0.1.2       farver_2.1.0        
-[34] ellipsis_0.3.2       tsbox_0.3.1          withr_2.5.0         
-[37] cli_3.3.0            magrittr_2.0.3       crayon_1.5.1        
-[40] evaluate_0.15        ps_1.7.0             fs_1.5.2            
-[43] fansi_1.0.3          nlme_3.1-157         MASS_7.3-57         
-[46] anytime_0.3.9        xts_0.12.1           progressr_0.10.0    
-[49] tools_4.2.0          data.table_1.14.2    lifecycle_1.0.1     
-[52] stringr_1.4.0        munsell_0.5.0        callr_3.7.0         
-[55] compiler_4.2.0       jquerylib_0.1.4      rlang_1.0.2         
-[58] grid_4.2.0           iterators_1.0.14     rstudioapi_0.13     
-[61] rappdirs_0.3.3       labeling_0.4.2       rmarkdown_2.14      
-[64] gtable_0.3.0         codetools_0.2-18     DBI_1.1.2           
-[67] R6_2.5.1             zoo_1.8-10           knitr_1.39          
-[70] tempdisagg_1.0       fastmap_1.1.0        utf8_1.2.2          
-[73] rprojroot_2.0.3      stringi_1.7.6        Rcpp_1.0.8.3        
-[76] vctrs_0.4.1          tidyselect_1.1.2     xfun_0.31           </code></pre>
-</div>
+ [1] nlme_3.1-157      fs_1.5.2          lubridate_1.8.0   webshot_0.5.3    
+ [5] httr_1.4.3        rprojroot_2.0.3   tools_4.2.0       backports_1.4.1  
+ [9] bslib_0.3.1       utf8_1.2.2        R6_2.5.1          mgcv_1.8-40      
+[13] DBI_1.1.2         colorspace_2.0-3  withr_2.5.0       tidyselect_1.1.2 
+[17] processx_3.5.3    compiler_4.2.0    git2r_0.30.1      cli_3.3.0        
+[21] rvest_1.0.2       xml2_1.3.3        labeling_0.4.2    sass_0.4.1       
+[25] scales_1.2.0      callr_3.7.0       rappdirs_0.3.3    systemfonts_1.0.4
+[29] digest_0.6.29     rmarkdown_2.14    svglite_2.1.0     pkgconfig_2.0.3  
+[33] htmltools_0.5.2   parallelly_1.31.1 dbplyr_2.1.1      fastmap_1.1.0    
+[37] highr_0.9         rlang_1.0.2       readxl_1.4.0      rstudioapi_0.13  
+[41] farver_2.1.0      jquerylib_0.1.4   generics_0.1.2    jsonlite_1.8.0   
+[45] magrittr_2.0.3    kableExtra_1.3.4  Matrix_1.4-1      Rcpp_1.0.8.3     
+[49] munsell_0.5.0     fansi_1.0.3       lifecycle_1.0.1   furrr_0.3.0      
+[53] stringi_1.7.6     whisker_0.4       yaml_2.3.5        grid_4.2.0       
+[57] parallel_4.2.0    listenv_0.8.0     promises_1.2.0.1  slider_0.2.2     
+[61] crayon_1.5.1      lattice_0.20-45   splines_4.2.0     haven_2.5.0      
+[65] hms_1.1.1         knitr_1.39        ps_1.7.0          pillar_1.7.0     
+[69] codetools_0.2-18  reprex_2.0.1      glue_1.6.2        evaluate_0.15    
+[73] rsample_0.1.1     getPass_0.2-2     modelr_0.1.8      vctrs_0.4.1      
+[77] tzdb_0.3.0        httpuv_1.6.5      cellranger_1.1.0  gtable_0.3.0     
+[81] future_1.25.0     assertthat_0.2.1  xfun_0.30         pins_1.0.1       
+[85] broom_0.8.0       later_1.3.0       viridisLite_0.4.0 warp_0.2.0       
+[89] globals_0.14.0    ellipsis_0.3.2   </code></pre>
 </div>
 </div>
 

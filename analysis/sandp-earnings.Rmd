@@ -1,7 +1,7 @@
 ---
 title: "sandp-earnings"
 author: "pgg1309"
-date: "2022-04-07"
+date: "2022-05-11"
 output: workflowr::wflow_html
 editor_options:
   chunk_output_type: inline
@@ -94,6 +94,12 @@ gross_output <- gross_output %>%
   mutate(index = yearquarter(index),
          value = slider::slide_dbl(value, mean, .before = 3, .complete = TRUE)) 
 
+## Monthly (last 12m avg, monthly)
+cpi <- get_data("USCONPRCE", "X", freq = "M", update = update.data)
+cpi <- cpi %>% 
+  mutate(index = yearmonth(index),
+         value = slider::slide_dbl(value, mean, .before = 11, .complete = TRUE))
+
 # convert quarterly to monthly
 xx <- tempdisagg::td(
   ts(gdp_nominal$value, start = c(1985, 1), freq = 4)  ~ 1,
@@ -102,7 +108,6 @@ xx <- tempdisagg::td(
 
 gdp_monthly <- tsbox::ts_tbl(predict(xx)) %>% 
   transmute(index = yearmonth(time), value)
-
 
 
 # select Thu (weekly data)
@@ -156,6 +161,77 @@ spx %>%
     y = 'billion'
   )
 ```
+
+## Total 'real' earnings
+The chart below plots total S&P earnings since 1985 deflated by US CPI
+```{r fig.width=9, message=FALSE, warning=FALSE}
+real.eps <- spx %>% 
+  transmute(index, earnings = eps * div) %>% 
+  drop_na(earnings) %>% 
+  # select last observation in each month
+  group_by(index =yearmonth(index)) %>% 
+  slice_tail(n=1) %>% 
+  ungroup() %>% 
+  as_tsibble() %>% 
+  left_join(cpi) %>% 
+  drop_na() %>% 
+  mutate(real_earnings = earnings / value * value[n()]) %>% 
+  model(
+    lm = TSLM(log(real_earnings) ~ trend())
+  ) %>% 
+  augment() 
+
+real.eps %>% 
+  ggplot(aes(x=index, y=real_earnings)) + 
+  geom_line(size = 1) +
+  geom_line(aes(y = .fitted), color = 'blue') +
+  geom_line(aes(y = exp(log(.fitted) + 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  geom_line(aes(y = exp(log(.fitted) - 2*sd(.innov))), color = 'blue', lty = 'dashed') +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    labels = scales::label_dollar(scale = 1e-6, accuracy = 1),
+    breaks = scales::breaks_extended(n = 12),
+    trans = 'log',
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  
+  labs(
+    title = "Real S&P Earnings",
+    subtitle = "Trailing 12-months, 2std dev band",
+    x = NULL,
+    y = 'billion (constant prices)'
+  )
+```
+
+## Real earnings growth and 'gap'
+O gráfico acima mostra que o lucro do S&P em termos reais cresceu em média no período `r real.eps %>% slice_tail(n=2) %>% mutate(growth = ((.fitted / lag(.fitted))^12 -1)) %>% drop_na(growth) %>%  pull(growth) %>% scales::label_percent(accuracy = 0.1)(.)` ao ano.
+
+O gráfico abaixo mostra o desvio do EPS dessa tendência ('gap') de forma que é possível vislumbrar qual o 'drawdown' do lucro real ao longo dos ciclos. 
+
+```{r}
+real.eps %>% 
+  mutate(gap = log(real_earnings/.fitted)) %>% 
+  ggplot(aes(x=index, y=gap)) + 
+  geom_bar(stat = 'identity', alpha = 0.5) +
+  geom_line() +
+  scale_x_yearmonth(
+    breaks = scales::breaks_pretty(n=20)
+  ) +
+  scale_y_continuous(
+    labels = scales::label_percent(accuracy = 0.1),
+    breaks = scales::breaks_extended(n = 12),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  labs(
+    title = "Real S&P Earnings",
+    subtitle = "Gap from trend",
+    x = NULL,
+    y = NULL
+  )
+```
+
 
 ## Earnings vs GDP
 ```{r fig.width=9}

@@ -1,0 +1,275 @@
+---
+title: "Taylor Rules!"
+author: "pgg1309"
+date: "2022-04-29"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 9
+)
+
+options(knitr.kable.NA = '')
+```
+
+
+```{r startup, include=FALSE}
+library(fpp3)
+library(readr)
+
+# Gap Measures
+gap_data <- read_csv("data/us-taylor-rule/GapMeasures.csv", 
+    col_names = FALSE, col_types = cols_only(X1 = col_date(format = "%m/%d/%Y"), 
+        X2 = col_number(), X6 = col_number(), 
+        X19 = col_number()), skip = 2) %>% 
+  drop_na(X1) %>%
+  rename(index = X1, ygap = X2, ugap = X6, egap = X19) %>% 
+  mutate(
+    index = yearquarter(index),
+    # measure imported is twice u gap
+    ugap = ugap / 2,
+    # measure is twice e/pop gap
+    egap = egap / 2)
+  
+
+
+# Shadow Rate
+# https://www.atlantafed.org/-/media/documents/datafiles/cqer/research/wu-xia-shadow-federal-funds-rate/WuXiaShadowRate.xlsx
+
+rates_data <- read_csv(
+  "data/us-taylor-rule/WuXiaShadowRate.csv",
+  col_names = FALSE,
+  col_types = cols_only(
+    X1 = col_character(),
+    X2 = col_number(),
+    X3 = col_number()
+  ),
+  skip = 1
+) %>%
+  mutate(
+    m = seq(from = as_date("1960-01-01"), along.with = X1, by = '1 month'), .before = 1
+    ) %>%
+  group_by(index = yearquarter(m)) %>%
+  summarize(eff = mean(X2), shadow = mean(X3)) %>%
+  # replace shadow with eff before it is calculated
+  mutate(shadow = if_else(is.na(shadow), eff, shadow))
+
+
+# Natural rate
+rstar_data <-
+  read_csv(
+    "data/us-taylor-rule/NaturalRatesMeasures.csv",
+    col_names = FALSE,
+    col_types = cols_only(
+      X1 = col_date(format = "%m/%d/%Y"),
+      X2 = col_number(),
+      X5 = col_number(),
+      X6 = col_number(),
+      X8 = col_number(),
+      X10 = col_number()
+    ),
+    skip = 2,
+    na = c("#N/A", "")
+  ) %>%
+  rename(
+    index = X1,
+    rstar2 = X2,
+    rstarLW1 = X5,
+    rstarLW2 = X6,
+    rstarHLW = X8,
+    rstarLM = X10
+  ) %>%
+  drop_na(index) %>% 
+  mutate(index = yearquarter(index))
+
+
+
+# data from https://www.atlantafed.org/cqer/research/taylor-rule
+#   PTR - 10-year expected PCE price inflation (Survey of Professional Forecasters)
+#   obtained from FRB HISTDATA.TXT
+
+inflation_data <-
+  read_csv(
+    "data/us-taylor-rule/InflationMeasures.csv",
+    col_names = FALSE,
+    col_types = cols_only(
+      X1 = col_date(format = "%m/%d/%Y"),
+      X2 = col_number(),
+      X3 = col_number(),
+      X11 = col_number()
+    ),
+    skip = 2,
+    na = c("#N/A", "")
+  ) %>%
+  rename(index = X1, core.pce = X2, pce = X3, spf = X11) %>% 
+  mutate(index = yearquarter(index))
+
+
+```
+
+
+
+
+## Introdução
+
+O objetivo dessa nota é estimar, de forma simples, uma *regra de Taylor* para a economia americana. O ponto de partida é uma regra flexível na forma utilizada por *Smets and Wouters (2007)*:
+
+$$
+r_t =\rho r_{t-1} + (1-\rho)\left[\phi_\pi \pi_t + r_y (y_t - y_t^p)\right] + r_\Delta \left[  (y_y - y_t^p) - (y_{t-1} - y_{t-1}^p) \right] + \varepsilon_t^r
+$$
+onde $\rho$ captura o grau de suavização da taxa de juros, $y_t^p$ é o PIB potencial e $\varepsilon_t$ é um processo autoregressivo de primeira ordem.
+
+$$
+\varepsilon_t^r = \rho_r \varepsilon_{t-1}^r + \eta_t^r
+$$
+
+Esta formulação permite incorporar tanto choques persistentes de política monetária quanto inércia.
+
+## Estimação
+
+Na prática, a equação estimada será 
+
+$$
+r_t = \theta_1 r_{t-1} + \theta_2 \pi_t + \theta_3 \tilde{y}_t + \theta_4 \tilde{y}_{t-1} + \epsilon_t^r
+$$
+onde $\theta_1 = \rho$, $\theta_2 = (1-\rho)\phi_\pi$, $\theta_3 = (1-\rho)r_y + r_\Delta$, e $\theta_4 = -r_\Delta$, e $\tilde{y}_t = y_t - y_t^p$.
+
+
+Em geral, estimar a regra de Taylor por mínimos quadrados (OLS) produz estimativas inconsistentes para os parâmetros. Tanto inflação quanto output gap respondem (em tese) a taxa de juros e portanto há um problema de endogeneidade (os regressores são correlacionados com o resíduo) o que resultaria em coeficientes viesados.  
+
+O artigo *[Taylor Rule Estimation by OLS (2021)](https://www.frbsf.org/economic-research/publications/working-papers/2018/11/)* sugere que o viés introduzido pela estimação OLS é pequeno, pois é função da fração (pequena) da variância da inflação que é explicada pelos choques de política monetária. Em outras palavras, choques de política monetária tem pouco impacto tanto em inflação quanto no hiato do produto limitando, portanto, o problema da endogeneidade. Além disso, os autores destacam que as funções impulso-resposta  produzidas quando utilizam os coeficientes estimados por mínimos quadrados são muito parecidas com as *verdadeiras* funções impulso resposta (claro, considerando o mundo verdadeiro como o DSGE especificado).
+
+## Variáveis
+
+### Inflação
+
+A inflação utilizada no modelo acima é definida como o desvio da meta, $\pi_t = \bar{\pi}_t - \pi_t^*$. Como inflação observada usaremos: PCE e core PCE. E como meta considero 2% e o dado do Survey of Professional Forecasters.
+
+```{r}
+inflation_data %>%
+  mutate(two = 2) %>%
+  pivot_longer(-index) %>%
+  ggplot(aes(x = index, y = value, color = name)) +
+  geom_line(size = 1) +
+  scale_x_yearquarter(breaks = scales::breaks_pretty(n = 15)) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 15),
+    labels = scales::label_percent(scale = 1)
+  ) +
+  labs(
+    title = "Inflation measures and targets",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme(legend.position = 'bottom')
+```
+
+### Taxa de juros
+
+As taxas de juros utilizadas serão  o *fed funds* efetivo e a taxa *shadow* que tenta incorporar o efeito das políticas monetárias não convencionais em uma medida de taxa overnight. 
+
+```{r}
+rates_data %>% 
+  pivot_longer(-index) %>% 
+  ggplot(aes(x = index, y = value, color = name)) +
+  geom_line(size = 1) + 
+  scale_x_yearquarter(breaks = scales::breaks_pretty(n = 15)) + 
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 15),
+    labels = scales::label_percent(scale = 1)
+  ) + 
+  labs(
+    title = "Interest rates",
+    x = NULL,
+    y = NULL, 
+    color = NULL
+  ) + 
+  theme(legend.position = 'bottom')
+```
+
+### Taxa de juros 'natural'
+
+As taxas de juros 'natural' normalmente utilizadas são: 2%, Laubach-Williams model 1-sided, Laubach-Williams model 2-sided, Holston-Laubach-Williams model, Lubik-Matthes model. O gráfico abaixo ilustra estas taxas:
+
+```{r}
+rstar_data %>% 
+   pivot_longer(-index) %>% 
+  ggplot(aes(x = index, y = value, color = name)) +
+  geom_line(size = 1) + 
+  scale_x_yearquarter(breaks = scales::breaks_pretty(n = 15)) + 
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 15),
+    labels = scales::label_percent(scale = 1)
+  ) + 
+  labs(
+    title = "Natural interest rates",
+    x = NULL,
+    y = NULL, 
+    color = NULL
+  ) + 
+  theme(legend.position = 'bottom')
+```
+
+### Taxa de juros 'nominal natural'
+
+Vou considerar a média entre LW1, LW2 e HLW como sendo 'a' medida de juro real neutro. O gráfico abaixo então compara a taxa de juros efetiva (shadow) com o que seria a taxa de juros 'nominal natural', construida utilizando a expectativa de inflação do SPF. 
+
+```{r}
+rstar_data %>%
+  transmute(index, rstar = (rstarLW1 + rstarLW2 + rstarHLW) / 3) %>%
+  full_join(select(inflation_data, index, spf), by = 'index') %>%
+  mutate(natural = rstar + spf) %>% 
+  drop_na() %>% 
+  full_join(select(rates_data, index, shadow), by = 'index') %>% 
+  select(index, natural, shadow) %>% 
+  pivot_longer(-index) %>%
+  drop_na() %>%
+  ggplot(aes(x = index, y = value, color = name)) +
+  geom_line(size = 1) +
+  scale_x_yearquarter(breaks = scales::breaks_pretty(n = 15)) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 15),
+    labels = scales::label_percent(scale = 1)
+  ) +
+  labs(
+    title = "Interest rates",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme(legend.position = 'bottom')
+```
+
+### Hiato do produto
+
+Várias métricas de hiato podem ser consideradas. Abaixo as métricas calculadas pelo CBO: hiato do produto, hiato do desemprego e hiato do emprego.
+
+```{r}
+gap_data %>%
+  pivot_longer(-index) %>%
+  drop_na() %>%
+  ggplot(aes(x = index, y = value, color = name)) +
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, lty = 'dashed') +
+  scale_x_yearquarter(breaks = scales::breaks_pretty(n = 15)) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 15),
+    labels = scales::label_percent(scale = 1)
+  ) +
+  labs(
+    title = "Gap Measures",
+    x = NULL,
+    y = NULL,
+    color = NULL
+  ) +
+  theme(legend.position = 'bottom')
+```
+
+

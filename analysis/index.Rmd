@@ -12,6 +12,7 @@ Welcome to my research website.
 
 Latest posts:
 
+* 2022-05-01: [Taylor Rules!](us-taylor-rule.html)
 * 2022-04-26: [US Conf Board Consumer Confidence](2022-04-26-us-confboard.html)
 * 2022-04-25: [SPX weekly return vs Fed reserves](fed-reserves-sandp.html)
 * 2022-04-11: [Goods elasticity](goods-elasticity.html)

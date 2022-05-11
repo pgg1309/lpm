@@ -1,0 +1,309 @@
+---
+title: "Us Consumption EDA"
+author: "Dr. Paulo Gustavo Grahl, CFA"
+date: "2022-05-09"
+output: 
+  workflowr::wflow_html:
+    toc: false
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 12
+)
+
+options(knitr.kable.NA = '')
+```
+
+
+```{r}
+library(zoo)
+library(tidyverse)
+library(patchwork)
+```
+
+
+```{r}
+plot_single <- function(db, prices, code, ytext = 120) {
+
+  code.b <- stringr::str_replace(code, "C$", "G")
+  
+  xtitle <- db %>% filter(SeriesCode == code) %>% slice_tail() %>% pull(LineDescription)
+  
+  db %>%
+    filter(SeriesCode == code) %>%
+    select(SeriesCode, TimePeriod, DataValue) %>%
+    left_join(
+      filter(prices, SeriesCode == code.b) %>% select(TimePeriod, DataValue),
+      by = 'TimePeriod'
+    ) %>%
+    mutate(q = DataValue.x / DataValue.y,
+           q = q / mean(q) * 100) %>% 
+  ggplot(aes(TimePeriod, q)) + 
+  geom_line(size = 1) +
+  geom_vline(xintercept = zoo::as.yearmon("Jan 2020"), lty = 'dashed') +
+  #annotate("text", x = zoo::as.yearmon("Jan 2020"), y = ytext, label = "  Covid", hjust = 0) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 10)
+  ) +
+  scale_x_yearmon(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n =10)
+  ) +
+  labs(
+    title = glue::glue("Quantity of: {xtitle}"),
+    x = NULL,
+    y = "index (avg = 100)",
+    color = NULL
+  ) +
+  theme(legend.position = 'bottom')
+}
+
+plot_list <- function(tickers, cdata, pdata, sdate = "Jan 2016") {
+  
+  tickers.b <- stringr::str_replace(tickers, "C$", "G")
+  
+  
+  df <- cdata %>%
+    filter(SeriesCode %in% tickers) %>%
+    select(SeriesCode, LineDescription, TimePeriod, DataValue) %>%
+    distinct(SeriesCode, TimePeriod, DataValue, .keep_all = TRUE) %>%
+    mutate(SeriesCode = stringr::str_replace(SeriesCode, "C$", "G")) %>% 
+    left_join(
+      filter(prices, SeriesCode %in% tickers.b) %>%
+        select(SeriesCode, LineDescription, TimePeriod, DataValue) %>% 
+        distinct(SeriesCode, TimePeriod, DataValue, .keep_all = TRUE),
+      by = c('SeriesCode', 'LineDescription', 'TimePeriod')
+    ) %>%
+    group_by(SeriesCode, LineDescription) %>% 
+    mutate(q = DataValue.x / DataValue.y,
+           q = q / mean(q) * 100) %>% 
+    filter(TimePeriod >= sdate) 
+  
+  ford <- df %>% slice_tail(n=12) %>% 
+    summarize(total = sum(DataValue.x), .groups = 'drop') %>% 
+    arrange(desc(total)) %>% pull(LineDescription)
+  
+  df <- df %>% mutate(
+    LineDescription = forcats::as_factor(LineDescription),
+    LineDescription = forcats::fct_relevel(LineDescription, ford))  
+  
+  df %>% 
+    ggplot(aes(x=TimePeriod, y = q)) +
+    geom_line(size=1) +
+    geom_point() +
+    geom_smooth(method = lm, formula = y ~x, se = FALSE, data = filter(df, TimePeriod < "Jan 2020"), fullrange = TRUE) +
+    geom_vline(xintercept = zoo::as.yearmon("Jan 2020"), lty = 'dashed') +
+      scale_y_continuous(
+    breaks = scales::breaks_extended(n = 10),
+    sec.axis = dup_axis(name = NULL)
+  ) +
+  scale_x_yearmon(
+    labels = scales::label_date_short(),
+    breaks = scales::breaks_pretty(n =10)
+  ) +
+    labs(
+      title = "Household Consumption",
+      subtitle = "dashed line: Covid",
+      x = NULL,
+      y = "index (avg = 100)"
+    ) +
+    facet_wrap(vars(LineDescription), ncol = 2)
+  }
+
+```
+
+
+
+## Introduction
+
+O objetivo desta análise é verificar quais itens da cesta de consumo estão muito fora da tendência pré-covid. 
+
+```{r}
+pceboard <- pins::board_folder("D:/RData/BEA")
+consumption <- pins::pin_read(pceboard, "U20405_M")
+prices <- pins::pin_read(pceboard, "U20404_M")
+
+# select terminal nodes
+# NOTE: need to keep lines <= 331
+#       as there are duplicated
+nodes <- c(7, 8, 9, 11, 15, 18, 23, 24, 25, 26, 28, 29, 31, 32, 34, 35, 39, 40, 41, 42, 45, 47, 48, 49, 50, 52, 53, 55, 56, 57, 58, 59, 62, 63, 65, 66, 67, 68, 69, 75, 76, 78, 79, 80, 81, 82, 84, 85, 86, 87, 89, 90, 91, 92, 93, 95, 96, 98, 99, 100, 101, 104, 105, 106, 108, 109, 110, 112, 115, 121, 122, 123, 125, 126, 127, 128, 130, 131, 132, 133, 134, 136, 137, 138, 139, 141, 142, 143, 152, 158, 161, 162, 165, 166, 168, 169, 172, 173, 175, 176, 177, 182, 183, 184, 186, 187, 190, 193, 194, 195, 196, 199, 201, 202, 203, 204, 205, 206, 209, 210, 212, 213, 214, 215, 217, 218, 219, 220, 222, 223, 225, 226, 227, 229, 230, 231, 236, 240, 241, 242, 243, 244, 248, 249, 253, 254, 255, 257, 258, 266, 267, 269, 270, 273, 277, 281, 282, 283, 285, 286, 287, 290, 291, 293, 294, 295, 297, 299, 300, 301, 302, 303, 304, 307, 308, 310, 311, 312, 314, 316, 317, 318, 319, 320, 321, 322, 323, 324, 326, 327, 328, 329, 330, 331
+)
+
+durable_nodes <- nodes[nodes <= 69]
+nondurable_nodes <- nodes[nodes >= 70 & nodes <= 147]
+services_nodes <- nodes[nodes >= 148 & nodes <= 339]
+
+# select codes based on latest data
+nodes_code <- consumption %>%
+  filter(TimePeriod == "Mar 2022", LineNumber %in% nodes) %>% 
+  pull(SeriesCode)
+
+durable_code <- consumption %>%
+  filter(TimePeriod == "Mar 2022", LineNumber %in% durable_nodes) %>% 
+  pull(SeriesCode)
+
+nondurable_code <- consumption %>%
+  filter(TimePeriod == "Mar 2022", LineNumber %in% nondurable_nodes) %>% 
+  pull(SeriesCode)
+
+services_code <- consumption %>%
+  filter(TimePeriod == "Mar 2022", LineNumber %in% services_nodes) %>% 
+  pull(SeriesCode)
+
+
+
+
+# check to see if all nodes sum to total (ex NPISHs)
+total_consumption <- consumption %>% 
+  filter(SeriesCode %in% c("DPCERC", "DNPIRC")) %>% 
+  select(TimePeriod, SeriesCode, DataValue) %>% 
+  pivot_wider(names_from = SeriesCode, values_from = DataValue) %>% 
+  transmute(TimePeriod, total.consumption = DPCERC - DNPIRC)
+
+# Visual inspection. 
+# small error since Jan 1987. 
+# ZERO error after Jan 2007
+# consumption %>% 
+#   filter(SeriesCode %in% nodes_code, TimePeriod >= "Jan 2005") %>% 
+#   select(TimePeriod, SeriesCode, DataValue) %>% 
+#   distinct() %>%
+#   group_by(TimePeriod) %>% 
+#   summarize(total = sum(DataValue)) %>% 
+#   left_join(total_consumption, by = 'TimePeriod') %>% 
+#   mutate(gap = (total - total.consumption)/total.consumption) %>% view
+#   ggplot(aes(x=TimePeriod, y = gap)) + 
+#   geom_line()
+
+
+# Limit data to start 2007
+consumption_data <- filter(consumption, TimePeriod >= "Jan 2007")
+
+```
+
+A tabela abaixo mostra os principais ítens consumidos nos últimos 12 meses para duráveis:
+```{r echo=FALSE}
+# Largest consumption itens in the last 12 months
+consumption_12m <- total_consumption %>% 
+  slice_tail(n=12) %>% pull(total.consumption) %>% mean()
+
+consumption_data %>% 
+  filter(SeriesCode %in% durable_code) %>% 
+  distinct(TimePeriod, SeriesCode, DataValue, .keep_all = TRUE) %>% 
+  group_by(LineDescription) %>% 
+  slice_tail(n = 12) %>% 
+  summarize(value = mean(DataValue)) %>%
+  mutate(share = value / consumption_12m * 100) %>% 
+  arrange(desc(value)) %>% 
+  mutate(value = scales::label_dollar()(value)) %>% 
+  slice_head(n=20) %>% 
+  kableExtra::kbl(format = 'html', digits = 1, align = 'lrr') %>% 
+  kableExtra::kable_classic(full_width = FALSE)
+
+```
+
+A tabela abaixo mostra os principais ítens consumidos nos últimos 12 meses para não-duráveis:
+```{r echo=FALSE}
+consumption_data %>% 
+  filter(SeriesCode %in% nondurable_code) %>% 
+  distinct(TimePeriod, SeriesCode, DataValue, .keep_all = TRUE) %>% 
+  group_by(LineDescription) %>% 
+  slice_tail(n = 12) %>% 
+  summarize(value = mean(DataValue)) %>%
+  mutate(share = value / consumption_12m * 100) %>% 
+  arrange(desc(value)) %>% 
+  mutate(value = scales::label_dollar()(value)) %>% 
+  slice_head(n=20) %>% 
+  kableExtra::kbl(format = 'html', digits = 1, align = 'lrr') %>% 
+  kableExtra::kable_classic(full_width = FALSE)
+```
+
+A tabela abaixo mostra os principais ítens consumidos nos últimos 12 meses para serviços:
+```{r echo=FALSE}
+consumption_data %>% 
+  filter(SeriesCode %in% services_code) %>% 
+  distinct(TimePeriod, SeriesCode, DataValue, .keep_all = TRUE) %>% 
+  group_by(LineDescription) %>% 
+  slice_tail(n = 12) %>% 
+  summarize(value = mean(DataValue)) %>%
+  mutate(share = value / consumption_12m * 100) %>% 
+  arrange(desc(value)) %>% 
+  mutate(value = scales::label_dollar()(value)) %>% 
+  slice_head(n=20) %>% 
+  kableExtra::kbl(format = 'html', digits = 1, align = 'lrr') %>% 
+  kableExtra::kable_classic(full_width = FALSE)
+```
+
+## Correlação entre os itens de consumo 
+
+O gráfico abaixo mostra qual o percentual da variância do consumo mensal explicado pelo primeiro componente principal dos 194 itens de consumo. A dinâmica do consumo ainda está claramente 'anormal'.
+
+```{r}
+W <- 2 # years
+pca_data <- consumption_data %>% 
+  filter(SeriesCode %in% nodes_code) %>% 
+  distinct(TimePeriod, SeriesCode, DataValue) %>% 
+  pivot_wider(names_from = SeriesCode, values_from = DataValue) %>% 
+  mutate(across(-TimePeriod, ~.x / lag(.x) -1 )) %>% 
+  drop_na() %>% 
+  rsample::sliding_window(lookback = W*12-1, complete = TRUE)
+  
+consumption_pca <- pca_data %>% 
+  mutate(
+    dd = map(splits, ~rsample::analysis(.x)),
+    pca = map(dd, ~prcomp(.x %>% select(-TimePeriod), center = TRUE, scale = TRUE)),
+    eigen = map(pca, ~broom::tidy(.x, matrix = 'eigenvalues')),
+    index = zoo::yearmon(map_dbl(dd, ~slice_tail(.x, n = 1)$TimePeriod)),
+    PC1 = map_dbl(eigen, ~filter(.x, PC==1)$cumulative),
+    fit = map(pca, ~broom::augment(.x))) 
+
+consumption_pca %>% 
+  ggplot(aes(index, PC1)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(
+    labels = scales::label_percent(),
+    breaks = scales::breaks_extended(n = 10)
+  ) +
+  labs(
+    title = "Montly changes in personal consumption",
+    subtitle = glue::glue("% of consumption variance explained by 1st PC ({W}-year rolling window)"),
+    x = NULL,
+    y = NULL
+  )
+```
+
+
+## Consumo
+
+Abaixo o consumo real (quantidade) dos itens mais consumidos em cada uma das categorias: duráveis, não-duráveis e serviços.
+
+### Duráveis
+```{r}
+dlist <- c("DNWTRC", "DUTRRC", "DFNRRC", "DCPSRC", "DSPGRC", "DJLYRC")
+plot_list(dlist, consumption_data, prices)
+```
+
+### Não duráveis
+```{r}
+ndlist <- c("DRXDRC", "DMFLRC", "DWGCRC", "DOFDRC", "DMBCRC", "DBAKRC")
+plot_list(ndlist, consumption_data, prices)
+```
+
+### Serviços
+```{r}
+slist <- c('DOWNRC', 'DNPHRC', 'DPHYRC', 'DTENRC', 'DMLSRC', 'DMOERC')
+plot_list(slist, consumption_data, prices)
+```
+
+## Gap
+
+Abaixo o cálculo dos 'gaps' em dólares
+```{r}
+
+```
+
