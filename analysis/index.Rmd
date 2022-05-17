@@ -25,4 +25,5 @@ Latest posts:
 * 2022-02-14: [US CPI - simulations](us-inflation-simulation.html)
 
 Reports:
+
 * [US Retail Sales](us-retail-sales.html)
