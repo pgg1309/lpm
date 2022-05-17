@@ -225,7 +225,7 @@ plot_charts <- function(catcode, catlabel, pcode, plot_is = TRUE, xmarts = marts
     mutate(volume.sales = value.sales / value.price * value.price[n()]) %>%
     select(-value.price,-key) %>%
     pivot_longer(-month) %>%
-    filter_index("2016 Jan" ~ .) %>%
+    filter_index("2018 Jan" ~ .) %>%
     ggplot(aes(month, value)) +
     scale_x_yearmonth(labels = scales::label_date_short(),
                       breaks = scales::breaks_pretty(n = 10)) +
@@ -429,9 +429,10 @@ cpi_goods <- cpi %>%
 ## Retail and food services (total)
 ```{r}
 check_data("44X72", "RETAIL & FOOD SERVICES", "T05001", "T07001")
-plot_charts("44X72", "RETAIL & FOOD SERVICES", "T07001", FALSE)
 
 new_price_data <- add_new_price("T07001", cpi_goods, new_price_data)
+
+plot_charts("44X72", "RETAIL & FOOD SERVICES", "T07001", FALSE)
 plot_charts("44X72", "RETAIL & FOOD SERVICES", "T07001", FALSE, xprice = new_price_data)
 
 ```
@@ -441,13 +442,20 @@ plot_charts("44X72", "RETAIL & FOOD SERVICES", "T07001", FALSE, xprice = new_pri
 check_data("44000", "RETAIL TOTAL (EXCL. FOOD SERVICES)", "T05002", "T07002")
 plot_charts("44000", "RETAIL TOTAL (EXCL. FOOD SERVICES)", "T07002")
 
+new_price_data <- add_new_price("T07002", cpi_goods, new_price_data)
+
+
 
 ```
 
 ## Retail total excl. motor vehicle, parts and gasoline
 ```{r}
 check_data("44W72", "RETAIL & FOOD SERVICES(EXCL. MOTOR VEH & PARTS AND GASOLINE STATIONS)", "T05046", "T07046")
-plot_charts("44W72", "RETAIL & FOOD SERVICES(EXCL. MOTOR VEH & PARTS AND GASOLINE STATIONS)", "T07046", FALSE)
+
+
+new_price_data <- add_new_price("T07046", cpi_goods, new_price_data)
+plot_charts("44W72", "RETAIL & FOOD SERVICES(EXCL. MOTOR VEH & PARTS AND GASOLINE STATIONS)", "T07046", FALSE, xprice = new_price_data)
+
 ```
 
 
@@ -464,110 +472,22 @@ plot_charts("441", "MOTOR VEHICLE & PARTS DEALERS", "T07003", xprice = new_price
 
 ```
 
-###  Motor vechicle and parts dealers (prices)
-Os 
-```{r}
-db <- cpi_goods %>% 
-  pivot_wider(names_from = series_id, values_from = value) %>% 
-  full_join(
-    price_data %>%
-      filter(SeriesCode == "T07003") %>%
-      transmute(month = yearmonth(TimePeriod), value = DataValue),
-    by = 'month') %>% 
-  mutate(across(-month, ~.x/lag(.x)-1)) %>% 
-  filter_index("1992 Feb" ~.) %>% 
-  as_tibble()
-
-# Elimina as obs NAs para o 'preco'
-idx <- !is.na(db$value)
-
-# Estimate model with all ncomps
-model <- plsr(value ~ ., ncomp = 20, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
-validationplot(model)
-# Estimate number of components
-ncomp.onesigma <- selectNcomp(model, method = "onesigma", plot = TRUE)
-
-# Estimate model with recommended number of components
-model <- plsr(value ~ ., ncomp = ncomp.onesigma, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
- 
-# check fit
-plot(model, ncomp = 1:ncomp.onesigma, asp = 1, line = TRUE)
-drop(predict(model, newdata = db[!idx,]))[ncomp.onesigma]
-
-```
-
-
 
 ## Furniture
 ```{r}
 check_data("442", "FURNITURE & HOME FURNISHING STORES", "T05008", "T07008")
 plot_charts("442", "FURNITURE & HOME FURNISHING STORES", "T07008", FALSE)
 
-
-db <- cpi_goods %>% 
-  pivot_wider(names_from = series_id, values_from = value) %>% 
-  full_join(
-    price_data %>%
-      filter(SeriesCode == "T07008") %>%
-      transmute(month = yearmonth(TimePeriod), value = DataValue),
-    by = 'month') %>% 
-  mutate(across(-month, ~.x/lag(.x)-1)) %>% 
-  filter_index("1992 Feb" ~.) %>% 
-  as_tibble()
-
-# Elimina as obs NAs para o 'preco'
-idx <- !is.na(db$value)
-
-# Estimate model with all ncomps
-model <- plsr(value ~ ., ncomp = 50, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
-validationplot(model)
-# Estimate number of components
-ncomp.onesigma <- selectNcomp(model, method = "onesigma", plot = TRUE)
-
-# Estimate model with recommended number of components
-model <- plsr(value ~ ., ncomp = ncomp.onesigma, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
- 
-# check fit
-plot(model, ncomp = 1:ncomp.onesigma, asp = 1, line = TRUE)
-
-drop(predict(model, newdata = db[!idx,]))[ncomp.onesigma]
-
-
-
+new_price_data <- add_new_price("T07008", cpi_goods, new_price_data)
+plot_charts("442", "FURNITURE & HOME FURNISHING STORES", "T07008", FALSE, xprice = new_price_data)
 ```
 
 ## Electronic and appliances stores
 ```{r}
 check_data("443", "ELECTRONICS & APPLIANCE STORES", "T05011", "T07011")
-plot_charts("443", "ELECTRONICS & APPLIANCE STORES", "T07011", FALSE)
 
-db <- cpi_goods %>% 
-  pivot_wider(names_from = series_id, values_from = value) %>% 
-  full_join(
-    price_data %>%
-      filter(SeriesCode == "T07011") %>%
-      transmute(month = yearmonth(TimePeriod), value = DataValue),
-    by = 'month') %>% 
-  mutate(across(-month, ~.x/lag(.x)-1)) %>% 
-  filter_index("1992 Feb" ~.) %>% 
-  as_tibble()
-
-# Elimina as obs NAs para o 'preco'
-idx <- !is.na(db$value)
-
-# Estimate model with all ncomps
-model <- plsr(value ~ ., ncomp = 50, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
-validationplot(model)
-# Estimate number of components
-ncomp.onesigma <- selectNcomp(model, method = "onesigma", plot = TRUE)
-
-# Estimate model with recommended number of components
-model <- plsr(value ~ ., ncomp = ncomp.onesigma, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
- 
-# check fit
-plot(model, ncomp = 1:ncomp.onesigma, asp = 1, line = TRUE)
-
-drop(predict(model, newdata = db[!idx,]))[ncomp.onesigma]
+new_price_data <- add_new_price("T07011", cpi_goods, new_price_data)
+plot_charts("443", "ELECTRONICS & APPLIANCE STORES", "T07011", FALSE, xprice = new_price_data)
 
 
 
@@ -576,73 +496,19 @@ drop(predict(model, newdata = db[!idx,]))[ncomp.onesigma]
 ## Building material and garden equipment
 ```{r}
 check_data("444", "BUILDING MATERIALS, GARDEN EQ. & SUPPLY DEALERS", "T05012", "T07012")
-plot_charts("444", "BUILDING MATERIALS, GARDEN EQ. & SUPPLY DEALERS", "T07012")
 
-db <- cpi_goods %>% 
-  pivot_wider(names_from = series_id, values_from = value) %>% 
-  full_join(
-    price_data %>%
-      filter(SeriesCode == "T07012") %>%
-      transmute(month = yearmonth(TimePeriod), value = DataValue),
-    by = 'month') %>% 
-  mutate(across(-month, ~.x/lag(.x)-1)) %>% 
-  filter_index("1992 Feb" ~.) %>% 
-  as_tibble()
+new_price_data <- add_new_price("T07012", cpi_goods, new_price_data)
+plot_charts("444", "BUILDING MATERIALS, GARDEN EQ. & SUPPLY DEALERS", "T07012", xprice = new_price_data)
 
-tail(db) %>% glimpse()
-# Elimina as obs NAs para o 'preco'
-idx <- !is.na(db$value)
-
-# Estimate model with all ncomps
-model <- plsr(value ~ ., ncomp = 50, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
-validationplot(model)
-# Estimate number of components
-ncomp.onesigma <- selectNcomp(model, method = "onesigma", plot = TRUE)
-
-# Estimate model with recommended number of components
-model <- plsr(value ~ ., ncomp = ncomp.onesigma, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
- 
-# check fit
-plot(model, ncomp = 1:ncomp.onesigma, asp = 1, line = TRUE)
-
-drop(predict(model, newdata = db[!idx,]))[ncomp.onesigma]
 
 ```
 
 ## Food and beverage stores
 ```{r}
 check_data("445", "FOOD & BEVERAGE STORES", "T05015", "T07015")
-plot_charts("445", "FOOD & BEVERAGE STORES", "T07015")
 
-db <- cpi_goods %>% 
-  pivot_wider(names_from = series_id, values_from = value) %>% 
-  full_join(
-    price_data %>%
-      filter(SeriesCode == "T07015") %>%
-      transmute(month = yearmonth(TimePeriod), value = DataValue),
-    by = 'month') %>% 
-  mutate(across(-month, ~.x/lag(.x)-1)) %>% 
-  filter_index("1992 Feb" ~.) %>% 
-  as_tibble()
-
-tail(db) %>% glimpse()
-
-# Elimina as obs NAs para o 'preco'
-idx <- !is.na(db$value)
-
-# Estimate model with all ncomps
-model <- plsr(value ~ ., ncomp = 50, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
-validationplot(model)
-# Estimate number of components
-ncomp.onesigma <- selectNcomp(model, method = "onesigma", plot = TRUE)
-
-# Estimate model with recommended number of components
-model <- plsr(value ~ ., ncomp = ncomp.onesigma, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
- 
-# check fit
-plot(model, ncomp = 1:ncomp.onesigma, asp = 1, line = TRUE)
-
-drop(predict(model, newdata = db[!idx,]))[ncomp.onesigma]
+new_price_data <- add_new_price("T07015", cpi_goods, new_price_data)
+plot_charts("445", "FOOD & BEVERAGE STORES", "T07015", xprice = new_price_data)
 
 
 ```
@@ -650,82 +516,28 @@ drop(predict(model, newdata = db[!idx,]))[ncomp.onesigma]
 ## Health and personal care stores
 ```{r}
 check_data("446", "HEALTH & PERSONAL CARE STORES", "T05027", "T07027")
-plot_charts("446", "HEALTH & PERSONAL CARE STORES", "T07027")
 
+new_price_data <- add_new_price("T07027", cpi_goods, new_price_data)
+plot_charts("446", "HEALTH & PERSONAL CARE STORES", "T07027", FALSE, xprice = new_price_data)
 
-db <- cpi_goods %>% 
-  pivot_wider(names_from = series_id, values_from = value) %>% 
-  full_join(
-    price_data %>%
-      filter(SeriesCode == "T07027") %>%
-      transmute(month = yearmonth(TimePeriod), value = DataValue),
-    by = 'month') %>% 
-  mutate(across(-month, ~.x/lag(.x)-1)) %>% 
-  filter_index("1992 Feb" ~.) %>% 
-  as_tibble()
-
-tail(db) %>% glimpse()
-
-# Elimina as obs NAs para o 'preco'
-idx <- !is.na(db$value)
-
-# Estimate model with all ncomps
-model <- plsr(value ~ ., ncomp = 50, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
-validationplot(model)
-# Estimate number of components
-ncomp.onesigma <- selectNcomp(model, method = "onesigma", plot = TRUE)
-
-# Estimate model with recommended number of components
-model <- plsr(value ~ ., ncomp = ncomp.onesigma, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
- 
-# check fit
-plot(model, ncomp = 1:ncomp.onesigma, asp = 1, line = TRUE)
-
-drop(predict(model, newdata = db[!idx,]))[ncomp.onesigma]
 
 ```
 
 ## Gasoline stations
 ```{r}
 check_data("447", "GASOLINE STATIONS", "T07028", "T07028")
-plot_charts("447", "GASOLINE STATIONS", "T07028")
 
+new_price_data <- add_new_price("T07028", cpi_goods, new_price_data)
+plot_charts("447", "GASOLINE STATIONS", "T07028", FALSE, xprice = new_price_data)
 
-db <- cpi_goods %>% 
-  pivot_wider(names_from = series_id, values_from = value) %>% 
-  full_join(
-    price_data %>%
-      filter(SeriesCode == "T07028") %>%
-      transmute(month = yearmonth(TimePeriod), value = DataValue),
-    by = 'month') %>% 
-  mutate(across(-month, ~.x/lag(.x)-1)) %>% 
-  filter_index("1992 Feb" ~.) %>% 
-  as_tibble()
-
-tail(db) %>% glimpse()
-
-# Elimina as obs NAs para o 'preco'
-idx <- !is.na(db$value)
-
-# Estimate model with all ncomps
-model <- plsr(value ~ ., ncomp = 50, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
-validationplot(model)
-# Estimate number of components
-ncomp.onesigma <- selectNcomp(model, method = "onesigma", plot = TRUE)
-
-# Estimate model with recommended number of components
-model <- plsr(value ~ ., ncomp = ncomp.onesigma, data = select(db[idx,], -month), scale = TRUE, validation = "LOO")
- 
-# check fit
-plot(model, ncomp = 1:ncomp.onesigma, asp = 1, line = TRUE)
-
-drop(predict(model, newdata = db[!idx,]))[ncomp.onesigma]
 ```
 
 ## Clothing and accessories stores
 ```{r}
 check_data("448", "CLOTHING & CLOTHING ACCESSORIES STORES", "T05019", "T07019")
-plot_charts("448", "CLOTHING & CLOTHING ACCESSORIES STORES", "T07019")
+
+new_price_data <- add_new_price("T07019", cpi_goods, new_price_data)
+plot_charts("448", "CLOTHING & CLOTHING ACCESSORIES STORES", "T07019", xprice = new_price_data)
 
 
      
@@ -733,32 +545,52 @@ plot_charts("448", "CLOTHING & CLOTHING ACCESSORIES STORES", "T07019")
 
 ## Sporting goods, hobby, books, musical instruments
 ```{r}
-check_data("451", "SPORTING GOODS, HOBBY, MUSICAL INST. & BOOK STORES")
-plot_charts("451", "SPORTING GOODS, HOBBY, MUSICAL INST. & BOOK STORES", "T07029")
+check_data("451", "SPORTING GOODS, HOBBY, MUSICAL INST. & BOOK STORES","T05029", "T07029" )
+
+new_price_data <- add_new_price("T07029", cpi_goods, new_price_data)
+plot_charts("451", "SPORTING GOODS, HOBBY, MUSICAL INST. & BOOK STORES", "T07029", FALSE, xprice = new_price_data)
+
+
 ```
 
 ## General merchandise stores
 ```{r}
-check_data("452", "GENERAL MERCHANDISE STORES")
-plot_charts("452", "GENERAL MERCHANDISE STORES", "T07023")
+check_data("452", "GENERAL MERCHANDISE STORES", "T05023", "T07023")
+
+new_price_data <- add_new_price("T07023", cpi_goods, new_price_data)
+plot_charts("452", "GENERAL MERCHANDISE STORES", "T07023", xprice = new_price_data)
+
+
 ```
 
 ## Miscellaneous store retailers
 ```{r}
-check_data("453", "MISCELLANEOUS STORES RETAILERS")
-plot_charts("453", "MISCELLANEOUS STORES RETAILERS", "T07032")
+check_data("453", "MISCELLANEOUS STORES RETAILERS", "T05032", "T07032")
+
+new_price_data <- add_new_price("T07032", cpi_goods, new_price_data)
+plot_charts("453", "MISCELLANEOUS STORES RETAILERS", "T07032", FALSE, xprice = new_price_data)
+
+
 ```
 
 ## Nonstore retailers
 ```{r}
-check_data("454", "NONSTORE RETAILERS", "T07037")
-plot_charts("454", "NONSTORE RETAILERS", "T07037")
+check_data("454", "NONSTORE RETAILERS", "T05037", "T07037")
+
+new_price_data <- add_new_price("T07037", cpi_goods, new_price_data)
+plot_charts("454", "NONSTORE RETAILERS", "T07037", FALSE, xprice = new_price_data)
+
+
 ```
 
 ## Food services and drinking places
 ```{r}
-check_data("722", "FOOD SERVICES & DRINKING PLACES", "T07041")
-plot_charts("722", "FOOD SERVICES & DRINKING PLACES", "T07041")
+check_data("722", "FOOD SERVICES & DRINKING PLACES", "T05041", "T07041")
+
+new_price_data <- add_new_price("T07041", cpi_goods, new_price_data)
+plot_charts("722", "FOOD SERVICES & DRINKING PLACES", "T07041", FALSE, xprice = new_price_data)
+
+
 ```
 
 
