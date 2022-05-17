@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="pgg1309" />
+
+<meta name="date" content="2022-05-12" />
+
+<title>us-retail-sales</title>
+
+<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Low Pass Macro</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/pgg1309/lpm">
+    <span class="fab fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">us-retail-sales</h1>
+<h4 class="author">pgg1309</h4>
+<h4 class="date">2022-05-12</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2022-05-17
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>lpm/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.0). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20220204code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20220204)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20220204code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20220204)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcompgg1309lpmtree69fd4e06ac3df432f5b59f76cbf25518df377771targetblank69fd4e0a">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/pgg1309/lpm/tree/69fd4e06ac3df432f5b59f76cbf25518df377771" target="_blank">69fd4e0</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcompgg1309lpmtree69fd4e06ac3df432f5b59f76cbf25518df377771targetblank69fd4e0a"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/pgg1309/lpm/tree/69fd4e06ac3df432f5b59f76cbf25518df377771" target="_blank">69fd4e0</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+
+Unstaged changes:
+    Modified:   data/us-retail-sales/MARTS-mf.csv
+    Modified:   data/us-retail-sales/MARTS-mf.zip
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with
+<code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<div id="main-aggregates" class="section level1">
+<h1>Main aggregates</h1>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+</div>
+<div id="retail-and-food-services-total" class="section level2">
+<h2>Retail and food services (total)</h2>
+<pre><code># A tsibble: 10 x 5 [1M]
+      month actual advance    bea price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul 620648  620648 644029     0.453
+ 2 2021 Aug 624738  624738 651573     0.518
+ 3 2021 Sep 630905  630905 656205     0.603
+ 4 2021 Oct 640899  640899 667937     1.36 
+ 5 2021 Nov 644741  644741 672609     0.867
+ 6 2021 Dec 634393  634393 654290     0.806
+ 7 2022 Jan 651557  651557 671939     0.875
+ 8 2022 Feb 662757  662321 683442     0.999
+ 9 2022 Mar     NA  671648 688353     1.70 
+10 2022 Apr     NA  677711     NA    NA    </code></pre>
+<pre><code>
+ n. de componentes:  10 
+
+ Inflation:  -0.05318199 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/us-retail-sales.Rmd/unnamed-chunk-2-2.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="retail" class="section level2">
+<h2>Retail</h2>
+<pre><code># A tsibble: 10 x 6 [1M]
+      month actual advance    bea inv_mrts price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul 543355  543355 566430   607510     0.410
+ 2 2021 Aug 546946  546946 573972   610025     0.496
+ 3 2021 Sep 552617  552617 577868   609602     0.602
+ 4 2021 Oct 562296  562296 589665   610365     1.42 
+ 5 2021 Nov 565690  565690 593964   622331     0.891
+ 6 2021 Dec 556810  556810 575936   649163     0.816
+ 7 2022 Jan 576000  576000 595646   660783     0.900
+ 8 2022 Feb 582698  581768 602546   669143     1.07 
+ 9 2022 Mar     NA  589550 606596       NA     1.89 
+10 2022 Apr     NA  593970     NA       NA    NA    </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre><code>
+ n. de componentes:  10 
+
+ Inflation:  -0.1281231 </code></pre>
+</div>
+<div id="retail-total-excl.-motor-vehicle-parts-and-gasoline"
+class="section level2">
+<h2>Retail total excl. motor vehicle, parts and gasoline</h2>
+<pre><code># A tsibble: 10 x 5 [1M]
+      month actual advance    bea price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul 451394  451394 514305     0.392
+ 2 2021 Aug 456024  456024 525338     0.531
+ 3 2021 Sep 458927  458927 528402     0.461
+ 4 2021 Oct 464253  464253 537947     1.09 
+ 5 2021 Nov 465861  465861 541708     0.698
+ 6 2021 Dec 457676  457676 525339     0.636
+ 7 2022 Jan 466972  466972 533432     0.972
+ 8 2022 Feb 472835  472501 543148     1.35 
+ 9 2022 Mar     NA  478242 550982     2.35 
+10 2022 Apr     NA  483228     NA    NA    </code></pre>
+<pre><code>
+ n. de componentes:  8 
+
+ Inflation:  -0.135605 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="retail-by-kind-of-business" class="section level1">
+<h1>Retail by kind of business</h1>
+<div id="motor-vechicle-and-parts-dealers" class="section level2">
+<h2>Motor vechicle and parts dealers</h2>
+<pre><code># A tsibble: 10 x 6 [1M]
+      month actual advance    bea inv_mrts price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul 120869  120869 129724   154913     0.723
+ 2 2021 Aug 119191  119191 126236   153148     0.494
+ 3 2021 Sep 120345  120345 127804   148765     1.20 
+ 4 2021 Oct 122668  122668 129990   146816     2.44 
+ 5 2021 Nov 123671  123671 130901   152142     1.56 
+ 6 2021 Dec 120807  120807 128952   161977     1.50 
+ 7 2022 Jan 129666  129666 138507   165741     0.439
+ 8 2022 Feb 131366  131428 140294   167625    -0.384
+ 9 2022 Mar     NA  129381 137371       NA    -0.828
+10 2022 Apr     NA  132192     NA       NA    NA    </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre><code>
+ n. de componentes:  2 
+
+ Inflation:  0.6819314 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-5-2.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="furniture" class="section level2">
+<h2>Furniture</h2>
+<pre><code># A tsibble: 10 x 5 [1M]
+      month actual advance   bea price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  11849   11849 12674   -0.303 
+ 2 2021 Aug  11889   11889 12881    0.538 
+ 3 2021 Sep  11855   11855 12741    1.97  
+ 4 2021 Oct  12064   12064 13071    0.0884
+ 5 2021 Nov  12025   12025 13159    0.462 
+ 6 2021 Dec  11219   11219 12179    0.830 
+ 7 2022 Jan  11994   11994 13020    1.91  
+ 8 2022 Feb  12089   12101 13124    1.15  
+ 9 2022 Mar     NA   12094 13112    0.522 
+10 2022 Apr     NA   12173    NA   NA     </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre><code>
+ n. de componentes:  14 
+
+ Inflation:  0.9263584 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-6-2.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="electronic-and-appliances-stores" class="section level2">
+<h2>Electronic and appliances stores</h2>
+<pre><code># A tsibble: 10 x 5 [1M]
+      month actual advance   bea price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul   8417    8417  9642   0.385  
+ 2 2021 Aug   7990    7990  9224   0.883  
+ 3 2021 Sep   7987    7987  9211  -0.153  
+ 4 2021 Oct   8191    8191  9603   0.00420
+ 5 2021 Nov   7227    7227  8487  -0.378  
+ 6 2021 Dec   7224    7224  8135   0.0886 
+ 7 2022 Jan   7263    7263  8168  -0.346  
+ 8 2022 Feb   7269    7516  8178  -0.683  
+ 9 2022 Mar     NA    7717  8259  -1.09   
+10 2022 Apr     NA    7798    NA  NA      </code></pre>
+<pre><code>
+ n. de componentes:  2 
+
+ Inflation:  -0.5727318 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="building-material-and-garden-equipment" class="section level2">
+<h2>Building material and garden equipment</h2>
+<pre><code># A tsibble: 10 x 6 [1M]
+      month actual advance   bea inv_mrts price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  38717   38717 41721    69100    -1.43 
+ 2 2021 Aug  39079   39079 42385    69305    -0.617
+ 3 2021 Sep  39167   39167 42414    69977     0.253
+ 4 2021 Oct  40093   40093 43680    70924     1.06 
+ 5 2021 Nov  40880   40880 45138    72317     0.686
+ 6 2021 Dec  41207   41207 45414    74215     1.36 
+ 7 2022 Jan  42170   42170 46472    76292     3.31 
+ 8 2022 Feb  42318   42307 46636    76301     1.51 
+ 9 2022 Mar     NA   42615 46746       NA     1.60 
+10 2022 Apr     NA   42572    NA       NA    NA    </code></pre>
+<pre><code>
+ n. de componentes:  1 
+
+ Inflation:  1.002468 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="food-and-beverage-stores" class="section level2">
+<h2>Food and beverage stores</h2>
+<pre><code># A tsibble: 10 x 6 [1M]
+      month actual advance   bea inv_mrts price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  72959   72959 76504    54779     0.605
+ 2 2021 Aug  74234   74234 78209    54696     0.314
+ 3 2021 Sep  74785   74785 78573    55175     0.943
+ 4 2021 Oct  75535   75535 79387    54905     0.907
+ 5 2021 Nov  75783   75783 79774    55177     0.666
+ 6 2021 Dec  76187   76187 79646    55349     0.357
+ 7 2022 Jan  76603   76603 80087    55488     0.987
+ 8 2022 Feb  76821   76533 80316    57552     1.44 
+ 9 2022 Mar     NA   77152 80968       NA     1.59 
+10 2022 Apr     NA   76977    NA       NA    NA    </code></pre>
+<pre><code>
+ n. de componentes:  5 
+
+ Inflation:  0.6252652 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="health-and-personal-care-stores" class="section level2">
+<h2>Health and personal care stores</h2>
+<pre><code># A tsibble: 10 x 5 [1M]
+      month actual advance   bea price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  32678   32678 33765    0.0396
+ 2 2021 Aug  32866   32866 34016   -0.112 
+ 3 2021 Sep  32710   32710 33661    0.569 
+ 4 2021 Oct  32444   32444 33271    0.476 
+ 5 2021 Nov  32793   32793 34029    0.0740
+ 6 2021 Dec  32797   32797 34200    0.122 
+ 7 2022 Jan  32815   32815 34229    0.982 
+ 8 2022 Feb  32756   32445 34150    0.435 
+ 9 2022 Mar     NA   32753 34186    0.231 
+10 2022 Apr     NA   32986    NA   NA     </code></pre>
+<pre><code>
+ n. de componentes:  6 
+
+ Inflation:  0.1404122 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="gasoline-stations" class="section level2">
+<h2>Gasoline stations</h2>
+<pre><code># A tsibble: 10 x 4 [1M]
+      month actual advance price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  48385   48385     2.15 
+ 2 2021 Aug  49523   49523     2.41 
+ 3 2021 Sep  51633   51633     1.19 
+ 4 2021 Oct  53978   53978     4.19 
+ 5 2021 Nov  55209   55209     3.81 
+ 6 2021 Dec  55910   55910     1.26 
+ 7 2022 Jan  54919   54919    -0.698
+ 8 2022 Feb  58556   58392     5.82 
+ 9 2022 Mar     NA   64025    15.4  
+10 2022 Apr     NA   62291    NA    </code></pre>
+<pre><code>
+ n. de componentes:  11 
+
+ Inflation:  -3.570191 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="clothing-and-accessories-stores" class="section level2">
+<h2>Clothing and accessories stores</h2>
+<pre><code># A tsibble: 10 x 6 [1M]
+      month actual advance   bea inv_mrts price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  25237   25237 27839    44910   -0.0774
+ 2 2021 Aug  25020   25020 27845    45163    0.468 
+ 3 2021 Sep  25376   25376 28382    45679   -1.17  
+ 4 2021 Oct  25487   25487 28660    46454    0.447 
+ 5 2021 Nov  25784   25784 28995    47212    0.227 
+ 6 2021 Dec  25051   25051 27886    48412    1.31  
+ 7 2022 Jan  25160   25160 27965    50273    1.29  
+ 8 2022 Feb  25337   25481 28179    51374    0.0161
+ 9 2022 Mar     NA   26001 28644       NA    0.954 
+10 2022 Apr     NA   26199    NA       NA   NA     </code></pre>
+<pre><code>
+ n. de componentes:  6 
+
+ Inflation:  -0.4923677 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="sporting-goods-hobby-books-musical-instruments"
+class="section level2">
+<h2>Sporting goods, hobby, books, musical instruments</h2>
+<pre><code># A tsibble: 10 x 5 [1M]
+      month actual advance   bea price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul   8974    8974  9874     0.303
+ 2 2021 Aug   8951    8951  9497     0.624
+ 3 2021 Sep   8951    8951  9891    -0.576
+ 4 2021 Oct   9020    9020  9980     0.592
+ 5 2021 Nov   9194    9194 10166     0.284
+ 6 2021 Dec   8968    8968  9537     0.286
+ 7 2022 Jan   8877    8877  9435     1.12 
+ 8 2022 Feb   8905    8916  9474     1.08 
+ 9 2022 Mar     NA    8966  9548     0.114
+10 2022 Apr     NA    8917    NA    NA    </code></pre>
+<pre><code>
+ n. de componentes:  6 
+
+ Inflation:  0.9023233 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="general-merchandise-stores" class="section level2">
+<h2>General merchandise stores</h2>
+<pre><code># A tsibble: 10 x 6 [1M]
+      month actual advance   bea inv_mrts price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  66518   66518 71204    84495     0.448
+ 2 2021 Aug  67257   67257 73691    85122     0.515
+ 3 2021 Sep  67760   67760 73427    86300     0.446
+ 4 2021 Oct  68516   68516 74659    86889     0.611
+ 5 2021 Nov  68402   68402 73796    87972     0.274
+ 6 2021 Dec  67197   67197 70976    92392     0.398
+ 7 2022 Jan  69233   69233 73096    97009     0.816
+ 8 2022 Feb  69049   67568 73030    98861     0.949
+ 9 2022 Mar     NA   68976 74034       NA     1.07 
+10 2022 Apr     NA   69140    NA       NA    NA    </code></pre>
+<pre><code>
+ n. de componentes:  5 
+
+ Inflation:  0.115278 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="miscellaneous-store-retailers" class="section level2">
+<h2>Miscellaneous store retailers</h2>
+<pre><code># A tsibble: 10 x 5 [1M]
+      month actual advance   bea price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  13894   13894 14776     0.341
+ 2 2021 Aug  14060   14060 15118     0.145
+ 3 2021 Sep  14324   14324 15576     0.370
+ 4 2021 Oct  14463   14463 15818     0.642
+ 5 2021 Nov  14381   14381 15867     0.108
+ 6 2021 Dec  14285   14285 15832     0.947
+ 7 2022 Jan  14527   14527 16197     1.19 
+ 8 2022 Feb  14795   14986 16505     0.792
+ 9 2022 Mar     NA   15342 17270     1.31 
+10 2022 Apr     NA   15951    NA    NA    </code></pre>
+<pre><code>
+ n. de componentes:  5 
+
+ Inflation:  0.02533702 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="nonstore-retailers" class="section level2">
+<h2>Nonstore retailers</h2>
+<pre><code># A tsibble: 10 x 5 [1M]
+      month actual advance   bea price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  94858   94858 89455    0.175 
+ 2 2021 Aug  96886   96886 94802    0.396 
+ 3 2021 Sep  97724   97724 94394    0.0914
+ 4 2021 Oct  99837   99837 97960    0.903 
+ 5 2021 Nov 100341  100341 99037   -0.0192
+ 6 2021 Dec  95958   95958 87937    0.257 
+ 7 2022 Jan 102773  102773 94203    1.01  
+ 8 2022 Feb 103437  104095 94808    0.708 
+ 9 2022 Mar     NA  104528 94306    0.505 
+10 2022 Apr     NA  106774    NA   NA     </code></pre>
+<pre><code>
+ n. de componentes:  3 
+
+ Inflation:  0.009205299 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-16-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="food-services-and-drinking-places" class="section level2">
+<h2>Food services and drinking places</h2>
+<pre><code># A tsibble: 10 x 5 [1M]
+      month actual advance   bea price_mom
+      &lt;mth&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;
+ 1 2021 Jul  77293   77293 77599     0.776
+ 2 2021 Aug  77792   77792 77602     0.694
+ 3 2021 Sep  78288   78288 78338     0.611
+ 4 2021 Oct  78603   78603 78272     0.856
+ 5 2021 Nov  79051   79051 78645     0.690
+ 6 2021 Dec  77583   77583 78354     0.726
+ 7 2022 Jan  75557   75557 76293     0.682
+ 8 2022 Feb  80059   80553 80896     0.480
+ 9 2022 Mar     NA   82098 81757     0.321
+10 2022 Apr     NA   83741    NA    NA    </code></pre>
+<pre><code>
+ n. de componentes:  1 
+
+ Inflation:  0.5579884 </code></pre>
+<p><img src="figure/us-retail-sales.Rmd/unnamed-chunk-17-1.png" width="672" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre><code>R version 4.2.0 (2022-04-22 ucrt)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19044)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] pls_2.8-0       patchwork_1.1.1 tsibble_1.1.1   forcats_0.5.1  
+ [5] stringr_1.4.0   dplyr_1.0.9     purrr_0.3.4     readr_2.1.2    
+ [9] tidyr_1.2.0     tibble_3.1.7    ggplot2_3.3.6   tidyverse_1.3.1
+[13] workflowr_1.7.0
+
+loaded via a namespace (and not attached):
+ [1] httr_1.4.3       sass_0.4.1       bit64_4.0.5      vroom_1.5.7     
+ [5] jsonlite_1.8.0   modelr_0.1.8     bslib_0.3.1      assertthat_0.2.1
+ [9] getPass_0.2-2    highr_0.9        cellranger_1.1.0 yaml_2.3.5      
+[13] lattice_0.20-45  pillar_1.7.0     backports_1.4.1  glue_1.6.2      
+[17] digest_0.6.29    promises_1.2.0.1 rvest_1.0.2      colorspace_2.0-3
+[21] htmltools_0.5.2  httpuv_1.6.5     pkgconfig_2.0.3  broom_0.8.0     
+[25] haven_2.5.0      scales_1.2.0     processx_3.5.3   whisker_0.4     
+[29] later_1.3.0      tzdb_0.3.0       git2r_0.30.1     farver_2.1.0    
+[33] generics_0.1.2   ellipsis_0.3.2   withr_2.5.0      cli_3.3.0       
+[37] magrittr_2.0.3   crayon_1.5.1     readxl_1.4.0     evaluate_0.15   
+[41] ps_1.7.0         fs_1.5.2         fansi_1.0.3      anytime_0.3.9   
+[45] xml2_1.3.3       pins_1.0.1       tools_4.2.0      hms_1.1.1       
+[49] lifecycle_1.0.1  munsell_0.5.0    reprex_2.0.1     callr_3.7.0     
+[53] compiler_4.2.0   jquerylib_0.1.4  rlang_1.0.2      grid_4.2.0      
+[57] rstudioapi_0.13  rappdirs_0.3.3   rmarkdown_2.14   gtable_0.3.0    
+[61] DBI_1.1.2        R6_2.5.1         zoo_1.8-10       lubridate_1.8.0 
+[65] knitr_1.39       fastmap_1.1.0    bit_4.0.4        utf8_1.2.2      
+[69] rprojroot_2.0.3  stringi_1.7.6    parallel_4.2.0   Rcpp_1.0.8.3    
+[73] vctrs_0.4.1      dbplyr_2.1.1     tidyselect_1.1.2 xfun_0.31       </code></pre>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
